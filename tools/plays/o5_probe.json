@@ -1,5 +1,5 @@
 {
- "about": "[O5] a probe (look development): the hideout's state as I walk in; the pad's seat at the diner.",
+ "about": "[O5] A hideout's shootout (the warehouse), profile good (brief O5 \u00a73): in by its door, they know my face (the warning), they draw (the gun kit's men: the stand-in for O4's), the fight: idle loses, warned; good clears it.",
  "url": "/?mute=1&start=city",
  "size": [
   1280,
@@ -28,7 +28,10 @@
    "wait": 1000
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; const p = F.w(0, 2.5); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
+   "eval": "(G.health.reset(), 1)"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; const p = F.w(0, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
   },
   {
    "wait": 3000
@@ -38,17 +41,41 @@
    "hold": 60
   },
   {
-   "wait": 600
-  },
-  {
-   "walk": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; const p = F.w(0, -1.8); return [[p.x, p.z]]; })()",
-   "timeout": 15000
-  },
-  {
    "wait": 500
   },
   {
-   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live.run.st; const e = G.eye; const T = window.__noir.THREE; return JSON.stringify({ inside: P.inside && P.inside.id, st: { hostile: st.hostile, seen: st.seen, warned: st.warned }, warn: G.hud.warnText, men: st.men.map((h) => { const a = new T.Vector3(h.pos.x, (h.pos.y || 0) + 1.55, h.pos.z); const d = new T.Vector3().subVectors(e, a); const L = d.length(); d.normalize(); const r = G.rays.raycast(a, d, L - 0.25, { anyHit: true }); return { d: +L.toFixed(1), hit: r ? (r.mesh.name || r.mesh.type) + '@' + r.t.toFixed(1) : null }; }) }); })()"
+   "walk": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; return [[0, -1.8]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 12000
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "(() => { const P = G.city.places, s = P.byId.get('warehouse'); const st = s.live && s.live.run && s.live.run.st; return JSON.stringify({ t: +G.time.toFixed(1), inside: P.inside && P.inside.id, eye: [G.eye.x, G.eye.z].map((v) => +v.toFixed(1)), st: st && { begun: st.begun, hostile: st.hostile, seen: +st.seen.toFixed(2), warned: st.warned, alive: st.men.filter((h) => h.alive).length }, warn: G.hud.warnText, gun: G.player.weapons.current, hp: G.health.hp }); })()"
+  },
+  {
+   "wait": 2000
   }
  ]
 }

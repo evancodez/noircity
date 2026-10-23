@@ -48,11 +48,8 @@
    "timeout": 12000
   },
   {
-   "until": "G.hud.warnText || G.player.weapons.current",
-   "timeout": 15000
-  },
-  {
-   "wait": 2800
+   "until": "G.city.places.byId.get('warehouse').live.run.st.hostile",
+   "timeout": 45000
   },
   {
    "shoot": {

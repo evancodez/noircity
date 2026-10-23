@@ -37,6 +37,8 @@ export default {
     K.lamp((x0 + x1) / 2, FLOOR + 3.1, -1.6, { kind: 'bare', power: 0.45, ceilY: FLOOR + H });
     // the bags down the left wall; the benches along the right; lockers at the back of the right wall
     for (const z of [-3.2, -5.6]) heavyBag(K, x0 + 1.0, z, { top: FLOOR + H });
+    // (the free bag answers a fist: E, a thump and it swings on its chain)
+    K.use({ at: [x0 + 1.0, FLOOR + 1.3, -5.6], range: 2.2, cone: 0.5, prompt: 'hit the bag', onUse: () => { const G = P.game; G.sfx.play('f_heavy', K.F.v(x0 + 1.0, FLOOR + 1.3, -5.6), { k: 0.6 }, { ref: 2 }); G.controller.kick(1.2, 1.2, 0.1); G.hud.message('The bag swings back. Again.', 1.2); } });
     bench(K, x1 - 0.5, x1 - 0.05, -7.2, -3.4);
     lockers(K, rz1 + 1.4, Math.min(-7.8, rz1 + 4.2), x1, { dir: 'w' });
     crates(K, x0 + 0.5, rz1 + 1.6, { n: 1, s: 0.7, rng });

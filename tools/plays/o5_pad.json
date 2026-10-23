@@ -87,17 +87,20 @@
    "eval": "(() => { const s = G.city.places.byId.get('diner'), F = s.frame, K = s.live.K; const S = K.seats[0]; const a = F.v(S.at[0], S.at[1], S.at[2]); const p = F.w(S.x, S.z + 1.0); N.controller.setPose(p.x, p.z, Math.atan2(-(a.x - p.x), -(a.z - p.z)), -0.6); return 1; })()"
   },
   {
-   "wait": 500
+   "until": "/sit/.test(G.hud.promptShown)",
+   "timeout": 10000
   },
   {
    "pad": {
     "b": [
      "sq"
-    ]
+    ],
+    "secs": 0.15
    }
   },
   {
-   "wait": 900
+   "until": "!!G.city.places.seat",
+   "timeout": 8000
   },
   {
    "name": "seated",

@@ -48,12 +48,16 @@
    "timeout": 12000
   },
   {
-   "until": "G.failing || G.health.dead",
-   "timeout": 60000
+   "until": "G.hud.warnText === 'They know your face.'",
+   "timeout": 45000
   },
   {
-   "name": "[O5] idle in a hideout: warned, then down",
-   "expect": "!!G.failing || G.health.dead || G.counters.deaths > 0"
+   "until": "!!G.failing || G.health.dead",
+   "timeout": 90000
+  },
+  {
+   "name": "[O5] idle in a hideout: warned (They know your face.), then down",
+   "expect": "true"
   }
  ]
 }

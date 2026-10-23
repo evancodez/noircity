@@ -74,7 +74,7 @@ export default {
       K.use({ seated: S, at: [x, FLOOR + 1.08, -6.25], range: 1.6, cone: 0.6, prompt: () => (s.state.cup === x ? 'drink the coffee' : `coffee: $${COFFEE}`), onUse: () => coffee(K, s, P, x) });
       K.use({ seated: S, at: [x + 0.32, FLOOR + 1.08, -6.3], range: 1.6, cone: 0.35, prompt: `pie: $${PIE}`, when: () => s.state.pie !== x, onUse: () => pie(K, s, P, x) });
     }
-    K.use({ at: [jx - 0.4, FLOOR + 1.0, jz], prompt: 'the jukebox', onUse: () => { P.game.sfx.play('jukebox_change', K.F.v(jx, FLOOR + 1, jz), {}, { ref: 3 }); P.game.hud.message('It takes the nickel. Nothing plays.', 1.8); } });
+    K.use({ at: [jx - 0.4, FLOOR + 1.0, jz], range: 2.6, cone: 0.6, prompt: 'the jukebox', onUse: () => { P.game.sfx.play('jukebox_change', K.F.v(jx, FLOOR + 1, jz), {}, { ref: 3 }); P.game.hud.message('It takes the nickel. Nothing plays.', 1.8); } });
     // its people: the waitress, the cook, two at a booth, a man at his supper
     K.fig('waitress', -1.2, -7.1, 0, { name: 'waitress', state: 'wipe' });
     K.fig('cook', 5.6, z0 - 1.1, 0, { name: 'cook', state: 'hatch' });

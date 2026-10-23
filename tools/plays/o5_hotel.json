@@ -70,7 +70,11 @@
    "hold": 60
   },
   {
-   "wait": 4200
+   "until": "G.city.places.level === 1 && !G.city.places.byId.get('hotel').live.K.lift.riding",
+   "timeout": 25000
+  },
+  {
+   "wait": 300
   },
   {
    "name": "up a floor",

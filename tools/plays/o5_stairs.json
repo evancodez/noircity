@@ -52,14 +52,23 @@
    "eval": "(() => { const s = G.city.places.byId.get('stairs1'), F = s.frame; N.controller.yaw = F.yaw(-Math.PI / 2); N.controller.pitch = -0.05; return 1; })()"
   },
   {
-   "wait": 400
+   "until": "/open/.test(G.hud.promptShown)",
+   "timeout": 10000
+  },
+  {
+   "name": "the roof door",
+   "expect": "/open/.test(G.hud.promptShown)"
   },
   {
    "key": "KeyE",
    "hold": 60
   },
   {
-   "wait": 900
+   "until": "!G.city.places.byId.get('stairs1').live.K.doors.find((d) => d.name === 'roof').shut",
+   "timeout": 8000
+  },
+  {
+   "wait": 600
   },
   {
    "walk": "(() => { const s = G.city.places.byId.get('stairs1'), F = s.frame; return [[3.0, -1.25], [3.9, -0.9]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
