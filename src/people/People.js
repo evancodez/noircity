@@ -67,6 +67,11 @@ export class People {
     this.stats = { spawned: 0, made: 0, released: 0, reports: 0, stopped: 0, hitByCar: 0, dashes: 0, killed: 0, knocked: 0 };
     this.pList = [...this.graph.pnodes.values()];
     this.boxes = this.C.props.filter((p) => p.kind === 'callbox');
+    // (where a man stands a while: the tram's stops, the stalls, the benches,
+    // the call boxes, the newsstands - a place on the pavement beside it)
+    this.spots = this.C.props.filter((p) => p.kind === 'stop' || p.kind === 'stall' || p.kind === 'bench' || p.kind === 'callbox' || p.kind === 'newsstand');
+    this.SB = new Map();
+    for (const q of this.spots) { const k = Math.floor(q.x / 32) * 4096 + Math.floor(q.z / 32); if (!this.SB.has(k)) this.SB.set(k, []); this.SB.get(k).push(q); }
     // the systems on the people
     this.crime = new Crime(this);
     G.crime = this.crime;
@@ -573,6 +578,17 @@ export class People {
       p.face(way[0][0], way[0][1]); p.fig.yaw = p.wantYaw; p.fig._prevYaw = p.wantYaw;
       p.goTo(way, { gait: kind === 'o3_newsboy' ? 'hurry' : this.rng.next() < 0.3 ? 'stroll' : 'walk' });
       p.mode = 'walk';
+      p.drunk = false; p.pair = null; p.pairLead = null;
+      const dist = this.districtOf(x, z), u2 = this.rng.next();
+      // (now and then a drunk, in the Tenements and the Docks: slow, weaving)
+      if ((dist === 'tenements' || dist === 'docks') && u2 < 0.12 && kind !== 'o3_newsboy' && !kind.startsWith('o3_woman') && kind !== 'couple_her') { p.drunk = true; p.paceK *= 0.75; p.gait = 'stroll'; }
+      // (a couple under one umbrella, downtown and on the Hill: she at his side, his umbrella over them both)
+      else if ((dist === 'downtown' || dist === 'hill') && u2 < 0.16 && umb && !kind.startsWith('o3_woman') && kind !== 'couple_her') {
+        const herKind = this.rng.next() < 0.5 ? 'couple_her' : 'o3_woman_' + 'abcd'[Math.floor(this.rng.next() * 4) % 4];
+        const q = this.spawn(herKind, x + Math.cos(p.yaw) * 0.6, z - Math.sin(p.yaw) * 0.6, p.yaw, 'walker');
+        q.mode = 'walk'; q.pair = p; q.pairLead = false; p.pair = q; p.pairLead = true;
+        q.goTo(way, { gait: p.gait }); q.side = p.side + 0.6;
+      }
       return;
     }
   }
@@ -612,13 +628,47 @@ export class People {
       if (p.t > (p.until || 4)) { p.mode = 'walk'; p.goTo(this.pavWalk(this.nearestP(p.pos.x, p.pos.z), 5), { gait: 'walk' }); }
       return true;
     }
-    // walking: at the end of the way, a stop now and then, or on
+    // walking: at the end of the way, a stop at a spot near (a stop, a stall,
+    // a bench, the call box) now and then, a look round, or on
     if (!p.path) {
       const r = this.rng.next();
-      if (r < 0.25) { p.mode = 'stand'; p.t = 0; p.until = 3 + this.rng.next() * 8; p.stop(); if (this.rng.next() < 0.5) p.watch({ x: p.pos.x + Math.sin(p.yaw) * 5, z: p.pos.z + Math.cos(p.yaw) * 5 }, p.until); }
+      const spot = r < 0.35 ? this.spotNear(p.pos.x, p.pos.z, 26) : null;
+      if (spot) {
+        p.goTo([[spot.x, spot.z]], { gait: 'walk', then: (q) => { q.mode = 'stand'; q.t = 0; q.until = 6 + this.rng.next() * 14; q.stop(); q.watch({ x: spot.lx, z: spot.lz }, q.until); } });
+      } else if (r < 0.5) { p.mode = 'stand'; p.t = 0; p.until = 3 + this.rng.next() * 6; p.stop(); if (this.rng.next() < 0.5) p.watch({ x: p.pos.x + Math.sin(p.yaw) * 5, z: p.pos.z + Math.cos(p.yaw) * 5 }, p.until); }
       else p.goTo(this.pavWalk(this.nearestP(p.pos.x, p.pos.z), 5), { gait: p.gait === 'run' ? 'walk' : p.gait });
     }
+    // (a drunk weaves: his line wanders across the pavement)
+    if (p.drunk && p.mode === 'walk') p.side = 0.6 + Math.sin(p.life * 0.9 + p.id) * 0.75;
+    // (a couple keep together: she walks his way, at his side)
+    if (p.pair && p.pair.standing && p.mode === 'walk' && p.pairLead === false) {
+      const L = p.pair;
+      if (L.path) { p.path = L.path; p.pi = L.pi; p.gait = L.gait; p.side = L.side + 0.6; }
+      const lag = Math.hypot(L.pos.x - p.pos.x, L.pos.z - p.pos.z);
+      p.paceK = lag > 1.2 ? 1.15 : lag < 0.6 ? 0.85 : 1;
+    }
     return true;
+  }
+  // a spot to stand at near a place: a point on the pavement beside the thing, the thing to look at
+  spotNear(x, z, r) {
+    let best = null, bd = r;
+    for (let i = Math.floor((x - r) / 32); i <= Math.floor((x + r) / 32); i++) for (let j = Math.floor((z - r) / 32); j <= Math.floor((z + r) / 32); j++) {
+      for (const q of this.SB.get(i * 4096 + j) || []) {
+        const d = Math.hypot(q.x - x, q.z - z);
+        if (d >= bd || d < 3) continue;
+        if (this.near(q.x, q.z, 1.6).length) continue;
+        bd = d; best = q;
+      }
+    }
+    if (!best) return null;
+    // (beside it, toward the pavement's walk line; facing the street)
+    const n = this.nearestP(best.x, best.z);
+    const dx = n.x - best.x, dz = n.z - best.z, L = Math.hypot(dx, dz) || 1;
+    const sx = best.x + dx / L * 1.1, sz = best.z + dz / L * 1.1;
+    if (this.inWall(sx, sz, 0.3)) return null;
+    const S = this.graph.streetAt(sx, sz);
+    const lx = S ? S.edge.ax + S.edge.dx * S.s : sx + dx, lz = S ? S.edge.az + S.edge.dz * S.s : sz + dz;
+    return { x: sx, z: sz, lx, lz, kind: best.kind };
   }
 
   // ---- cars among people: the dash clear, and a car that hits ------------------------------------

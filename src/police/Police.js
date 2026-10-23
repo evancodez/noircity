@@ -558,11 +558,15 @@ export class Police {
     if (c.job === 'beat') {
       // walking the beat; at a corner now and then a stop; he watches me if I am close
       if (!c.path) {
-        if (Math.random() < 0.3) { c.mode = 'stand'; c.t = 0; c.until = 3 + Math.random() * 5; c.stop(); }
-        else c.goTo(P.pavWalk(P.nearestP(c.pos.x, c.pos.z), 5), { gait: 'stroll' });
+        if (Math.random() < 0.35) {
+          c.mode = 'stand'; c.t = 0; c.until = 4 + Math.random() * 6; c.stop();
+          // (a word with a man of the street: the two of them face each other a while)
+          const w = P.near(c.pos.x, c.pos.z, 7).find((q) => q.role === 'walker' && q.standing && (q.mode === 'walk' || q.mode === 'stand') && !q.pair);
+          if (w) { c.face(w.pos.x, w.pos.z); c.look(w.pos); w.stop(); w.mode = 'stand'; w.t = 0; w.until = c.until; w.face(c.pos.x, c.pos.z); w.look(c.pos); c.talkTo = w; }
+        } else { c.talkTo = null; c.goTo(P.pavWalk(P.nearestP(c.pos.x, c.pos.z), 5), { gait: 'stroll' }); }
       }
       if (c.mode === 'stand' && c.t > c.until) c.mode = 'walk';
-      if (d < 9 && !this._heat) c.look(E); else if (c.lookingAt) c.look(null);
+      if (d < 9 && !this._heat) { c.look(E); c.lookingMe = true; } else if (c.lookingMe && !c.talkTo) { c.look(null); c.lookingMe = false; }
       return;
     }
     if (c.job === 'scene') {
