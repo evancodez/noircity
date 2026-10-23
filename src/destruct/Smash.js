@@ -514,7 +514,7 @@ export class Smash {
       G0.emit('smash', { kind: it.kind, pos: pt.clone(), by, how: res, item: it, speed: vn });
       // (its white stroke where it went: in the dark a thing going over was a
       // black hump on black - the critic's blocker 1, GAME_TWO A.4)
-      if (K.how !== 'pane') this.mark(pt, Math.min(1, 0.45 + vn / 16));
+      if (K.how !== 'pane') this.mark(pt, Math.min(1, 0.45 + vn / 16), d, K);
       // (my car feels it: the eye kicked by what it cost - a lamp post half the speed)
       if (car && G0.vehicles && G0.vehicles.player === car && G0.controller && G0.controller.kick) {
         const c = 1 - (K.drag ?? 1);
@@ -528,10 +528,17 @@ export class Smash {
 
   // the white of a break (the muzzle flash's splatter, two frames, a hair
   // toward the eye; its size on the screen by how near): three a step at most
-  mark(pt, k = 1) {
+  // (with the way it went, d, and its kind: what flies off it white - sparks
+  // off iron, splinters off wood and stone - and a pale puff that hangs a moment)
+  mark(pt, k = 1, way = null, K = null) {
     const G0 = this.game;
     if (!G0 || !G0.fx || !G0.fx.hit || !G0.fx.hit.punch) return;
     if ((this.marks = (this.marks || 0) + 1) > 3) return;
+    if (way && K) {
+      if (K.mat === 'iron' || K.surf === SURF.IRON) this.sparksAt(pt.clone(), way.clone().negate(), 0.7 * k);
+      else this.chipsAt(pt, way.clone().negate(), 0.13, Math.round(8 + 8 * k));
+      for (let i = 0; i < 2; i++) G0.fx.dust.spawn({ pos: pt.clone().add(_v.set(this.gauss() * 0.25, this.rnd(0, 0.4), this.gauss() * 0.25)), vel: new THREE.Vector3(way.x * 0.8 + this.gauss() * 0.4, this.rnd(0.2, 0.7), way.z * 0.8 + this.gauss() * 0.4), life: this.rnd(0.6, 1.0), size: [0.55 * k + 0.3, 0.5 * k + 0.3], grow: 0.9, rot: this.rnd(0, 6.28), col: [0.85, 0.85, 0.85], alpha: 0.35, drag: 2, fadeOut: 0.6 });
+    }
     const cam = G0.camera;
     _w.subVectors(cam.position, pt);
     const d = _w.length();

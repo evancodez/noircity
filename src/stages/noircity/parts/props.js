@@ -19,7 +19,8 @@ export default {
     const mats = {
       iron: M.lampIron, kerb: M.kerb, tree: M.tower, wood: M.wood,
       cloth: new THREE.MeshStandardMaterial({ color: 0x262626, roughness: 0.9, side: THREE.DoubleSide }),
-      fruit: new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.32, envMap: M.env, envMapIntensity: 0.5 }),
+      // (a stall's goods: pale enough to read spilled across a dark road)
+      fruit: new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.32, envMap: M.env, envMapIntensity: 0.5, emissive: 0x2e2e2e }),
       // (papers and a stall's canvas carry a little light of their own: in the
       // dark a newsstand's papers in the air were nothing - the critic's
       // blocker 1; under a lamp they print paper white)

@@ -34,9 +34,11 @@ export const CITY_SEAT = { eye: new THREE.Vector3(-0.02, 1.5, -0.34), fov: 64, p
 export function brakesFor(G) {   // [O6] exported: the bed (scenes/smash.js) runs the same roam
   return (v) => {
     const R = G.city;
-    if (!R || !R.wantOut) return false;
+    if (!R || !R.wantOut) { v.input.hold = 0; return false; }
     const I = v.input, held = (c) => G.held(c);
-    I.throttle = 0; I.brake = 1; I.handbrake = 0;
+    // ([O6] hold: the brake brakes a car rolling back too - E while it rolled
+    // back was S held, and S past a breath reverses: it backed away faster)
+    I.throttle = 0; I.brake = 1; I.handbrake = 0; I.hold = 1;
     I.steer = ((held('KeyA') || held('ArrowLeft')) ? 1 : 0) - ((held('KeyD') || held('ArrowRight')) ? 1 : 0);
     const P = G.controller.pad && G.controller.pad.car;
     if (P && P.steer) I.steer = Math.max(-1, Math.min(1, P.steer));
