@@ -22,6 +22,10 @@ and the hunts (`tools/hunts/*.mjs`, `tools/hunt.mjs`, `tools/lib/whole.py`,
 - **[must]** "Probably add a mini map in the bottom left corner too or something." (The user, after his first drive, 2026-10-23.) An inked minimap bottom left: the streets within about 150 m, heading up, my mark, the cops' marks when they are close, the thing I have taken up (a fare, a bout) as a mark; a torn-paper patch in the game's ink, small, hidden on the title and under stills; M still opens the full map.
 - **[must]** "Think GTA but noir. Make sure the player has freedom to cause havoc and do what they want in this open world, one that reacts to them." (OPEN_WORLD.md: the player may do anything the systems allow and the city answers everything he does, visibly, within seconds; no invisible hand says no, never a scripted stop or a locked verb; the only answer is the city's own, and a scene broken on purpose still ends somewhere sane.)
 
+Read `docs/THINGS_TO_DO.md` first: the design of every thing to do (how
+each is found, played and answered by the city; the seams `things.start`
+/ `things.end`, `news.say`, `money.add` / `money.take`): it binds.
+
 What you build on: the HUD (`src/ui/Hud.js`, `kit.js`, `inkArt.js`,
 `lettering.js`: the title, the pause card and its settings line, the
 objective, the cards), the saves (`src/game/Save.js`), the music
