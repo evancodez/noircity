@@ -157,12 +157,34 @@ function stepStations(B, P, dt) {
       }
       S.rec.maxV = Math.max(S.rec.maxV, R.stats.maxV);
       if (R.asleep && S.rec.settled == null) S.rec.settled = +(B.T - S.rec.t0).toFixed(2);
+      // (through a wall or a post: a point more than 4 cm into one, counted every step)
+      if (!R.asleep || !S.rec.checkedAsleep) { S.rec.through += throughWalls(R); if (R.asleep) S.rec.checkedAsleep = true; }
+      // (where it lies, the last of it)
+      S.rec.at = [+R.p[0].x.toFixed(2), +R.p[0].y.toFixed(2), +R.p[0].z.toFixed(2)];
     }
     if (S.getUp && S.p && S.p.down && !S.p.dead && S.t > S.at + S.getUp) { S.p.getUp(); }
     if (S.t >= S.every) S.spawn();
   }
 }
 let ctx0 = null;
+// the points of a body more than 4 cm into a wall's box or a post (the city's colliders)
+function throughWalls(R) {
+  const C = ctx0.stage.colliders, pv = R.p[0];
+  const L = C.near ? C.near(pv.x, pv.z, 2.6) : C.boxes;
+  let n = 0;
+  for (let i = 0; i < R.p.length; i++) {
+    const p = R.p[i], r = R.r[i] * 0.4;
+    for (const o of L) {
+      if (o.gone) continue;
+      if (o.r != null) { if (o.tag === 'hood' || o.tag === 'person' || o.tag === 'corpse' || o.tag === 'cast') continue; if (Math.hypot(p.x - o.x, p.z - o.z) < o.r - 0.04 + r * 0) { n++; break; } continue; }
+      if (o.hx < 0.005 && o.hz < 0.005) continue;
+      if (o.holes && o.holes.some((h) => p.z > h[0] && p.z < h[1])) continue;
+      const dx = p.x - o.cx, dz = p.z - o.cz, lx = dx * o.c - dz * o.s, lz = dx * o.s + dz * o.c;
+      if (Math.abs(lx) < o.hx - 0.04 && Math.abs(lz) < o.hz - 0.04) { n++; break; }
+    }
+  }
+  return n;
+}
 
 // a man shot where he stands, the round from `from`
 function shoot(p, from, dead = true) {
@@ -227,6 +249,63 @@ const SETUP = {
       B.men.push(p);
     }
   },
+  // what a man means to do, shown before he does it (the AI read proofs): a witness sees a man
+  // knocked down and points at me before he runs to tell it (1 s); a cop sent to me walks over,
+  // his palm out at 'Hands up.' (4 s); a gang's three turn on me, each hand into the coat a breath
+  // before the gun comes out (8 s). The bed stands each down after (no arrest, no gunfight here).
+  intent(ctx, B, P) {
+    const G = ctx.game;
+    const R = B.intent = { t: {} };
+    B.men = [];
+    const victim = man(P, 'o3_fedora_h', -119.2, 39.4, Math.PI / 2);
+    const wit = man(P, 'o3_woman_c', -121.8, 37.4, -Math.PI / 2 + 0.6);
+    const cop = P.dbgCop(-113.2, 33.5, -0.6, 'beat'); cop.role = 'cop';
+    // (the two of the street are walkers: the street's own brain takes the witness to his box)
+    victim.role = 'walker'; wit.role = 'walker';
+    R.victim = victim; R.wit = wit; R.cop = cop;
+    B.men.push(victim, wit, cop);
+    B.at = (t, fn) => (B.timers || (B.timers = [])).push({ t, fn });
+    B.at(1.0, () => {
+      R.t.punch = B.T;
+      victim.knock(V(-1, 0, -0.3).normalize(), { why: 'punch' });
+      const rec = P.crime.emit('punch', victim.pos, 'player', { victim });
+      if (wit.mode !== 'report' && rec) P.startReport(wit, rec);
+    });
+    B.at(4.0, () => { R.t.raise = B.T; P.hold = true; P.police.raise(1, G.eye, 'staged'); });
+    // (stood down a breath after 'Hands up.': no arrest in the bed; then the gang)
+    R.afterHalt = () => {
+      P.police.reset(); R.t.reset = B.T;
+      B.at(B.T + 0.5, () => { R.three = P.gangs.three('docks', -124.6, 33.6); });
+      B.at(B.T + 2.0, () => { const T = R.three; if (T) { R.t.hostile = B.T; P.gangs.hostile(T, 'gun'); } });
+      B.at(B.T + 3.6, () => { try { P.police.guns.end(true); } catch (e) { /* */ } R.t.end = B.T; });
+    };
+  },
+  // the budget's moment: forty walking the avenue and twelve bodies down in it (fps, memory)
+  crowd(ctx, B, P) {
+    const looks = ALL();
+    B.men = [];
+    const lanes = [-128.4, -126.8, -121.2, -119.0, -113.6, -111.8, -108.6, -131.6];
+    for (let i = 0; i < 40; i++) {
+      const lane = lanes[i % lanes.length], z0 = 14 + ((i * 5.9) % 46), north = (i >> 1) % 2 === 0;
+      const look = looks[(i * 7 + 3) % looks.length];
+      const p = P.spawn(look, lane, z0, north ? 0 : Math.PI, roleOf(look));
+      p.role = 'parade';
+      const gait = ['walk', 'stroll', 'hurry'][i % 3];
+      const back = (q) => { const zz = q.pos.z > 37 ? 12 : 62; q.mode = 'walk'; q.goTo([[q.pos.x, zz]], { gait, then: back }); };
+      p.mode = 'walk'; p.goTo([[p.pos.x, north ? 62 : 12]], { gait, then: back });
+      B.men.push(p);
+    }
+    // the bodies: twelve knocked down at once in the first second, in the road between the lanes
+    B.bodies = [];
+    for (let i = 0; i < 12; i++) {
+      const look = looks[(i * 11 + 5) % looks.length];
+      const x = -125.0 + (i % 4) * 2.6, z = 18 + Math.floor(i / 4) * 9 + (i % 2) * 1.5;
+      if (!clearX(x)) continue;
+      const p = man(P, look, x, z, i * 1.3);
+      B.bodies.push(p);
+      P.later(0.3 + i * 0.05, () => p.knock(V(Math.sin(i * 1.3), 0, Math.cos(i * 1.3)), { dead: i % 3 === 0, why: i % 3 === 0 ? 'shot' : 'punch' }));
+    }
+  },
   falls(ctx, B, P) {
     const S = BED.stoop;
     const street = { x: -121, z: 37 };
@@ -257,6 +336,23 @@ function carsAt(B, P, list) {
   }
 }
 
+// the intent beat's record: when each man showed what he meant, and when he did it
+function watchIntent(B, P) {
+  const R = B.intent, T = R.t;
+  const first = (k, cond) => { if (T[k] == null && cond) T[k] = +B.T.toFixed(3); };
+  first('point', R.wit.gestureName === 'o8_point');
+  first('witGo', R.wit.mode === 'report' && R.wit.phase === 'go');
+  first('halt', R.cop.gestureName === 'o8_halt');
+  first('handsUp', P.police.warned === 'Hands up.');
+  if (T.handsUp != null && T.reset == null && B.T > T.handsUp + 0.7) R.afterHalt();
+  if (R.three) {
+    for (const [i, p] of R.three.men.entries()) {
+      first('reach' + i, p.gestureName === 'o8_reach');
+      first('draw' + i, !!p.armed);
+    }
+  }
+}
+
 function stepCars(ctx, B, dt) {
   const G = ctx.game;
   for (const C of B.cars || []) {
@@ -282,8 +378,9 @@ function stepCars(ctx, B, dt) {
 
 export default defineScene({
   id: 'cast', stage: 'noircity', title: '', name: 'The cast (the bed)',
-  beats: ['parade', 'lineup', 'falls', 'cars', 'car20', 'car50', 'crowd'],
-  objectives: { parade: null, lineup: null, falls: null, cars: null, car20: null, car50: null, crowd: null },
+  // (station, hospital: where a fall in the bed wakes - its start again, never an unknown beat)
+  beats: ['parade', 'lineup', 'falls', 'cars', 'car20', 'car50', 'crowd', 'intent', 'station', 'hospital'],
+  objectives: { parade: null, lineup: null, falls: null, cars: null, car20: null, car50: null, crowd: null, intent: null, station: null, hospital: null },
   setup: {
     parade(ctx) { place(ctx, { x: -106.8, z: 30.5, yaw: 1.05, pitch: -0.06 }); },
     lineup(ctx) { place(ctx, { x: -120.0, z: 43.4, yaw: 0, pitch: -0.1 }); },
@@ -291,7 +388,10 @@ export default defineScene({
     cars(ctx) { place(ctx, { x: -107.6, z: 46.5, yaw: 1.12, pitch: -0.08 }); },
     car20(ctx) { place(ctx, { x: -107.8, z: 45.0, yaw: 0.85, pitch: -0.12 }); },
     car50(ctx) { place(ctx, { x: -119.0, z: 49.5, yaw: 0.55, pitch: -0.1 }); },
-    crowd(ctx) { place(ctx); },
+    crowd(ctx) { place(ctx, { x: -120.0, z: 66.0, yaw: 0, pitch: -0.04 }); },
+    intent(ctx) { place(ctx, { x: -116.9, z: 42.4, yaw: 0.62, pitch: -0.1 }); },
+    station(ctx) { place(ctx); },
+    hospital(ctx) { place(ctx); },
   },
   *script(ctx) {
     const G = ctx.game;
@@ -303,6 +403,8 @@ export default defineScene({
     ctx.onStep((dt) => {
       if (G.state !== 'playing' && !G.shotMode) return;
       B.T += dt;
+      if (B.timers) for (let i = B.timers.length - 1; i >= 0; i--) if (B.T >= B.timers[i].t) { const f = B.timers[i].fn; B.timers.splice(i, 1); f(); }
+      if (B.intent) watchIntent(B, P);
       stepStations(B, P, dt);
       stepCars(ctx, B, dt);
       for (const v of G.vehicles.list) v.step(dt);

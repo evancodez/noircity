@@ -1,0 +1,18 @@
+{
+ "about": "[O8] the physics layer, a car into a man (the bed, ?start=cast.cars): a sedan at 20 km/h knocks him down before it, one at 50 km/h takes him over the bonnet and throws him along its way; both lie still within 4.5 s, nothing under the street. node tools/play.mjs tools/plays/o8/cars.json",
+ "url": "/?mute=1&start=cast.cars",
+ "size": [1280, 800],
+ "out": "shots/o8/play_cars",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.castBed && G.castBed.beat === 'cars' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(window.__top = 0, window.__hi = setInterval(() => { const S = G.castBed.stations.find((s) => s.name === 'car50'); const R = S && S.p && S.p.fig.rag; if (R) for (const p of R.p) window.__top = Math.max(window.__top, p.y); }, 16), 1)" },
+  { "until": "G.castBed.stations.every((s) => s.p && s.p.down)", "timeout": 8000, "label": "both struck and down" },
+  { "until": "G.castBed.rec.filter((r) => r.settled != null).length === 2", "timeout": 9000, "label": "both lie still" },
+  { "eval": "(clearInterval(window.__hi), JSON.stringify({ top: +window.__top.toFixed(2), rec: G.castBed.rec.map((r) => ({ name: r.name, settled: r.settled, minY: +r.minY.toFixed(3), through: r.through, at: r.at })) }))" },
+  { "expect": "(() => { const r = (n) => G.castBed.rec.find((x) => x.name === n); const a = r('car20'), b = r('car50'); return a.settled - 2 < 4.5 && b.settled - 2 < 4.5 && a.minY > -0.03 && b.minY > -0.03 && b.at[2] - 40 > 6 && window.__top > 1.15 && window.__top < 3.2; })()", "label": "20 km/h: down before it; 50 km/h: over the bonnet (a part above its line, under 3.2 m) and thrown on more than 6 m; both still, nothing under the street" },
+  { "shot": "c1_after" },
+  { "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()", "label": "no errors in #errlog" }
+ ]
+}

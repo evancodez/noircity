@@ -382,7 +382,7 @@ export class Character {
   // down, not dead: no blood pool; he stays where he fell, breathing
   // [O8] push: { v (world m/s), lo, hi, up } - in a stage with the physics layer
   // (stage.ragdolls: the city) the fall is the light ragdoll's, pushed that way
-  ko(kind = 'deathBack', { push = null, follow = 1 } = {}) {
+  ko(kind = 'deathBack', { push = null, follow = 1, clip = 'koFall' } = {}) {
     if (this.down) return;
     this.down = true;
     this.seat = null;
@@ -401,7 +401,7 @@ export class Character {
       const lying = this.animName.startsWith('br_ko_window');
       this.clipH = null;
       if (lying) this._anim('ko', 0.3);
-      else { this._anim('koFall', 0.08); this._koFall = 0; if (this.fig.startRagdoll) this.fig.startRagdoll({ clip: 'koFall', push, follow }); }   // [O8]
+      else { this._anim('koFall', 0.08); this._koFall = 0; if (this.fig.startRagdoll) this.fig.startRagdoll({ clip, push, follow }); }   // [O8]
       if (this.fig.hat == null && this.kind === 'brawler' && !lying) {
         const d = new THREE.Vector3(Math.sin(this.fig.yaw), 0, Math.cos(this.fig.yaw)).multiplyScalar(-1.2).add(_v.set(0, 1.8, 0));
         this.fig.throwCover(d);

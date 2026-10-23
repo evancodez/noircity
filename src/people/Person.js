@@ -6,6 +6,7 @@ import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/
 import { styleFor } from '../cast/style.js';   // [O8] a man's own build, carriage, walk and habits
 import { carry } from '../cast/o8extras.js';   // [O8] the cigarette, the cane
 import { LOOKS } from './costumes.js';
+import { chooseDeath } from '../guns/deaths.js';
 
 // [O3] One of the city's people (lane O3, NOIR CITY): a figure of the cast
 // (src/cast/: Figure on the Hood's skeleton, the costume's outline, its
@@ -222,7 +223,16 @@ export class Person {
       c.lookAt(null);
       // [O8] (the blow's own push: a punch throws the head and the chest back, a round less)
       const P = push || (dir ? { v: new THREE.Vector3(dir.x, 0, dir.z).normalize().multiplyScalar(why === 'shot' ? 1.4 : 2.3), lo: 0.05, hi: 1, up: why === 'shot' ? 0 : 0.4 } : null);
-      try { c.ko('deathBack', { push: P, follow }); } catch (e) { F.die('deathBack'); }
+      // [O8] the fall that fits where he stands (the gun kit's rule: a wall at his back, down it,
+      // sitting; no room, onto his knees and his side; else back, the way the blow went)
+      let clip = 'koFall';
+      if (this.stage.ragdolls && dir && !push) {
+        try {
+          const pick = chooseDeath(this.G, F, dir, false, 'deathBack');
+          if (pick && pick.kind !== 'deathBack') { clip = pick.kind; if (pick.yaw != null) { F.yaw = pick.yaw; F._prevYaw = pick.yaw; } }
+        } catch (e) { /* the plain fall */ }
+      }
+      try { c.ko('deathBack', { push: P, follow, clip }); } catch (e) { F.die('deathBack'); }
       // a body is solid to things, not to feet: out of the walkers' colliders
       const col = this.stage.colliders, i = col.circles.indexOf(F.collider);
       if (i >= 0) col.circles.splice(i, 1);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { JOINTS, OFFSET } from '../enemies/HoodRig.js';
+import { addGunClips } from '../enemies/gunClips.js';
 
 // [O8] The physics layer, within reason (docs/briefs/O8_FIGURES.md §2): a
 // light ragdoll for a fall - a knock-down, a car's hit, a death. Sixteen
@@ -81,7 +82,10 @@ function fk(off, quat, hipsPos) {
   return { P, Q };
 }
 function clipTable(fig, name) {
-  const pair = fig.anim && fig.anim.clips && fig.anim.clips[name];
+  // (the gun kit's slumps - against a wall, in a doorway, over cover - are the Hood's bank's:
+  // any figure's fall may reach for them)
+  let pair = fig.anim && fig.anim.clips && fig.anim.clips[name];
+  if (!pair && name) pair = addGunClips()[name];
   if (!pair || !pair.lower) return null;
   let byRig = TABLES.get(fig.anim.clips);
   if (!byRig) TABLES.set(fig.anim.clips, (byRig = new Map()));
