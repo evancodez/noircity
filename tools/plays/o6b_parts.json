@@ -1,0 +1,17 @@
+{
+ "about": "[O6b] The parts as things (brief O6b §3): the ten beat with a sedan's door and its bonnet lying in the lane under the el (&ten=parts), on foot straight into the nearest one, W held 3 s (it stops me: never inside its box), then E into my coupe and north up the lane over the door at about 30 km/h (tools/lib/o6b_damage.mjs parts): the car meets it (a bump that slows it), the door is shoved on and comes to rest again. node tools/play.mjs tools/plays/o6b_parts.json",
+ "url": "/?mute=1&start=smash.ten&ten=parts",
+ "size": [1440, 900],
+ "out": "shots/o6b/parts",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 2500 },
+  { "expect": "G.stage.smash.out.filter((i) => i.part && i.state === 'rest' && i.lie).length === 2" },
+  { "drive": "tools/lib/o6b_damage.mjs", "mode": "parts",
+    "check": "D.walks.length === 1 && D.walks[0].inside === 0 && D.walks[0].min > -0.05 && D.over && D.over.hit && D.over.vAt < D.over.vBefore - 0.3 && D.over.moved > 0.2 && D.over.state === 'rest'",
+    "label": "a door lying in the road stops a man and slows a car, is shoved on and lies still again" },
+  { "shot": "p1_after" }
+ ]
+}
