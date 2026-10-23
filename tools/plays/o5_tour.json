@@ -1,0 +1,38 @@
+{
+ "about": "[O5] The tour of every place (brief O5 \u00a73): the door's latency, in, every usable thing tried and its answer, the jank walk of the room, out; the car outside still there, nothing loaded twice. tools/lib/o5_places.mjs 'tour'.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/tour",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o5_places.mjs",
+   "mode": "tour",
+   "timeout": 3000000,
+   "check": "D.bad.length === 0",
+   "label": "[O5] every place: in and out by its door, everything tried answered, nothing inside a wall"
+  }
+ ]
+}

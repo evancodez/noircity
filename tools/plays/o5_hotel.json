@@ -1,0 +1,166 @@
+{
+ "about": "[O5] The hotel by real input: in from Grand Ave, the lift up, room 3's door, the bed: sleep - the black, health whole, the save written at the hotel; the page reloaded, CONTINUE: in my room by the bed (brief O5 \u00a72.6).",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/hotel",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(localStorage.removeItem('noir.save'), G.health.hp = 40, 1)"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; const p = F.w(0, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "name": "the door says go in",
+   "expect": "/go in/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 500
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; return [[0, -1.6], [-3.5, -10.6], [-6.6, -10.7]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 25000
+  },
+  {
+   "name": "in the cab",
+   "expect": "G.city.places.inside && G.city.places.inside.id === 'hotel'"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame, K = s.live.K; const a = F.v(...([-6.2, 1.5, -10.7])); const C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = -0.1; return 1; })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "name": "the lift's prompt",
+   "expect": "/lift/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 4200
+  },
+  {
+   "name": "up a floor",
+   "expect": "G.city.places.level === 1 && N.controller.groundY > 4"
+  },
+  {
+   "shot": "01_corridor"
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; return [[-4.8, -10.6], [-0.1, -10.4]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 20000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; N.controller.yaw = F.yaw(Math.PI); N.controller.pitch = -0.05; return 1; })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "name": "room 3's door",
+   "expect": "/open/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 900
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame; return [[-0.1, -8.0], [0.6, -7.4]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 15000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), F = s.frame, K = s.live.K; const a = F.v(...([-1.2, 4.7 + 0.6, -7.76])); const C = N.controller; C.yaw = Math.atan2(-(a.x - G.eye.x), -(a.z - G.eye.z)); C.pitch = -0.45; return 1; })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "name": "the bed",
+   "expect": "/sleep/.test(G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "shot": "02_black"
+  },
+  {
+   "until": "!G.city.places.sleeping",
+   "timeout": 15000
+  },
+  {
+   "name": "slept: health whole, the save at the hotel",
+   "expect": "G.health.hp === 100 && JSON.parse(localStorage.getItem('noir.save')).beat === 'hotel'"
+  },
+  {
+   "reload": true
+  },
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=continue]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 60000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "name": "CONTINUE: in my room",
+   "expect": "G.city.places.inside && G.city.places.inside.id === 'hotel' && N.controller.groundY > 4"
+  },
+  {
+   "shot": "03_continue"
+  }
+ ]
+}

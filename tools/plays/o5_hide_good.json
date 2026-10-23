@@ -1,0 +1,74 @@
+{
+ "about": "[O5] A hideout's shootout (the warehouse), profile good (brief O5 \u00a73): in by its door, they know my face (the warning), they draw (the gun kit's men: the stand-in for O4's), the fight: idle loses, warned; good clears it.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5/hide_good",
+ "steps": [
+  {
+   "until": "G.state === 'title' && !document.getElementById('title').classList.contains('hidden')",
+   "timeout": 60000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 60000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(G.health.reset(), 1)"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; const p = F.w(0, 3.0); G.stage.part('stream').warmAround(p.x, p.z); N.controller.setPose(p.x, p.z, F.yaw(0), -0.05); return 1; })()"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "key": "KeyE",
+   "hold": 60
+  },
+  {
+   "wait": 500
+  },
+  {
+   "walk": "(() => { const s = G.city.places.byId.get('warehouse'), F = s.frame; return [[0, -1.8]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()",
+   "timeout": 12000
+  },
+  {
+   "until": "G.hud.warnText || G.player.weapons.current",
+   "timeout": 15000
+  },
+  {
+   "wait": 2800
+  },
+  {
+   "shoot": {
+    "until": "G.city.places.byId.get('warehouse').state.cleared || G.health.dead || !!G.failing",
+    "timeout": 240000,
+    "cover": true,
+    "react": [
+     260,
+     460
+    ],
+    "err": 0.02
+   }
+  },
+  {
+   "name": "[O5] good hands: the warehouse cleared",
+   "expect": "G.city.places.byId.get('warehouse').state.cleared"
+  }
+ ]
+}

@@ -55,7 +55,8 @@ export class Places {
   }
 
   // ---- what is whose ------------------------------------------------------------------------------
-  owns(door) { return !!door && (this.lots.has(door.lot) || (door.place && this.byId.has(door.place))); }
+  // (only a place's own street doors: the lot's other doors stay O1's, and rattle)
+  owns(door) { return !!door && this.list.some((s) => [s.door, ...s.doors].some((d) => Math.hypot(d.x - door.x, d.z - door.z) < 0.4)); }
   get loaded() { return this.list.filter((s) => s.live); }
 
   // ---- the walking surface ----------------------------------------------------------------------------
@@ -68,12 +69,14 @@ export class Places {
       const L = s.lot;
       if (x < L.x0 - 1 || x > L.x1 + 1 || z < L.z0 - 1 || z > L.z1 + 1) continue;
       const p = s.frame.l(x, z);
-      const consider = (y, lvl) => { const d = Math.abs(y - hint) + (y > hint + 0.75 ? 50 : 0); if (d < bd) { bd = d; best = y; this._lvlAt = lvl; } };
-      for (const f of K.floors) if (p.x >= f.x0 && p.x <= f.x1 && p.z >= f.z0 && p.z <= f.z1) consider(f.y, f.lvl);
+      // (the nearest to the floor I am on; a flight of stairs within a step
+      // of it wins over the floor its foot stands on - I go up it)
+      const consider = (y, lvl, ramp) => { const d0 = Math.abs(y - hint); const d = d0 + (y > hint + 0.75 ? 50 : 0) - (ramp && d0 < 0.6 ? 10 : 0); if (d < bd) { bd = d; best = y; this._lvlAt = lvl; } };
+      for (const f of K.floors) if (p.x >= f.x0 && p.x <= f.x1 && p.z >= f.z0 && p.z <= f.z1) consider(f.y, f.lvl, f.prefer);
       for (const r of K.ramps) {
         if (p.x < r.x0 || p.x > r.x1 || p.z < r.z0 || p.z > r.z1) continue;
         const t = r.dir === 'n' ? (r.z1 - p.z) / (r.z1 - r.z0) : r.dir === 's' ? (p.z - r.z0) / (r.z1 - r.z0) : r.dir === 'w' ? (r.x1 - p.x) / (r.x1 - r.x0) : (p.x - r.x0) / (r.x1 - r.x0);
-        consider(r.y0 + (r.y1 - r.y0) * Math.max(0, Math.min(1, t)), r.lvl);
+        consider(r.y0 + (r.y1 - r.y0) * Math.max(0, Math.min(1, t)), r.lvl, true);
       }
     }
     return best;
@@ -109,12 +112,22 @@ export class Places {
       K.box('concrete', axis === 'x' ? d.x - d.w / 2 : d.x - 0.32, axis === 'x' ? d.x + d.w / 2 : d.x + 0.02, FLOOR - 0.15, FLOOR, axis === 'z' ? d.z - d.w / 2 : d.z - 0.32, axis === 'z' ? d.z + d.w / 2 : d.z + 0.02, 0);
       return D;
     });
+    // the windows' glass (the base's Glass: a round cracks it, more break it;
+    // broken, it is a way in - its collider goes - and a crime)
+    s.live.panes2 = [];
+    for (const w of K.windows || []) {
+      // (the window's floor: the one under its sill)
+      let wl = 0, wy = -9; for (const f of K.floors) if (f.y <= w.y - w.h / 2 + 0.05 && f.y > wy) { wy = f.y; wl = f.lvl; }
+      const c = K.solid(w.lx - w.w / 2, w.lx + w.w / 2, -0.3, -0.06, { tag: 'window', lvl: wl });
+      const pane = stage.glass.addPane({ centre: V(w.x - w.nx * 0.16, w.y, w.z - w.nz * 0.16), normal: V(w.nx, 0, w.nz), w: w.w - 0.06, h: w.h - 0.06, tag: `${s.id}_win${s.live.panes2.length}` });
+      pane.on('state', (p, st) => { if (st === 'gone') { c.gone = true; c.lvl = -99; this.crime('glass', p.c, 1); } });
+      s.live.panes2.push(pane);
+    }
     K.finish();
-    stage.scene.add(K.group);
+    stage.scene.add(K.group, K.outer);
     // the bullets' world: the room's solids
-    K.group.traverse((o) => { if (o.isMesh && !o.userData.noRay) stage.addSolid(o); });
     s.live.solids = [];
-    K.group.traverse((o) => { if (o.isMesh && !o.userData.noRay) s.live.solids.push(o); });
+    for (const g of [K.group, K.outer]) g.traverse((o) => { if (o.isMesh && !o.userData.noRay) { stage.addSolid(o); s.live.solids.push(o); } });
     // the lot's mass cut out of its far tile (its base tier), the panes at its doors and windows out of its chunk
     s.live.cuts = [];
     this.cutLot(s);
@@ -147,6 +160,7 @@ export class Places {
     if (!L) return;
     const stage = this.stage, G = this.game;
     if (L.run && L.run.dispose) L.run.dispose();
+    for (const p of L.panes2 || []) { try { stage.glass.removePane(p); if (p.mesh) { p.mesh.geometry.dispose(); if (p.mesh.material.dispose) p.mesh.material.dispose(); } } catch (e) { /* gone */ } }
     for (const h of L.ix) G.interact.remove(h);
     for (const c of L.cast) { try { stage.cast.remove(c); } catch (e) { /* gone */ } }
     for (const m of L.solids) stage.removeSolid(m);
@@ -263,6 +277,7 @@ export class Places {
     try {
       const p = s.frame.w(f.x, f.z);
       const c = stage.cast.spawn(f.kind, { at: { x: p.x, z: p.z }, yaw: s.frame.figYaw(f.yaw), name: f.name ? `${s.id}_${f.name}` : null, variant: f.variant || null });
+      if (f.seat) c.sit({ pos: V(p.x, f.seat.y, p.z), yaw: s.frame.figYaw(f.yaw) - Math.PI, name: f.seat.name || 'stool' });
       if (f.state && f.state !== 'idle') c.setState(f.state, 0);
       c.place2 = s; c.spec = f;
       s.live.cast.push(c);
@@ -272,18 +287,22 @@ export class Places {
   }
 
   // ---- what E reaches: the doors, the seats, the things -------------------------------------------------
+  wireLate(s) { if (s.live) this.wire(s); }
   wire(s) {
     const G = this.game, K = s.live.K, F = s.frame;
     const add = (h) => { const x = G.interact.add({ scope: 'o5', ...h, id: `o5_${s.id}_${s.live.ix.length}` }); s.live.ix.push(x); return x; };
     for (const D of K.doors) {
+      if (D._wired) continue; D._wired = true;
       const h = add({ at: D.centre, range: 2.3, cone: 0.62, prompt: '', when: () => this.canUse(D.lvl), onUse: () => this.useDoor(s, D) });
       Object.defineProperty(h, 'prompt', { get: () => (D.locked ? 'try the door' : D.shut || D.target === 0 ? (D.street && !this.inSite(s) ? 'go in' : 'open') : 'close') });
     }
     for (const S of K.seats) {
+      if (S._wired) continue; S._wired = true;
       const at = S.at ? F.v(S.at[0], S.at[1], S.at[2]) : F.v(S.x, S.eyeY - 0.5, S.z);
       add({ at, range: S.range, cone: S.cone, prompt: S.prompt, when: () => !this.seat && this.canUse(S.lvl) && (!S.when || S.when()), onUse: () => this.sit(s, S) });
     }
     for (const U of K.uses) {
+      if (U._wired) continue; U._wired = true;
       const at = U.at && U.at.isVector3 ? U.at : U.atFn ? null : F.v(U.at[0], U.at[1], U.at[2]);
       const h = add({ at: U.atFn || at, range: U.range, cone: U.cone, prompt: '', when: () => this.canUse(U.lvl) && (U.seated ? this.seat === U.seated : !U.seatOnly || !!this.seat) && (!U.when || U.when()), onUse: (ctx) => U.onUse(ctx, s, this) });
       if (typeof U.prompt === 'function') Object.defineProperty(h, 'prompt', { get: U.prompt }); else h.prompt = U.prompt;
@@ -362,9 +381,13 @@ export class Places {
   }
   crime(kind, pos, level = 1) { this.game.emit('crime', { kind, pos, level, place: this.inside ? this.inside.id : null }); }
 
+  // a step function run every step until it returns true (a sleep's black, a cut)
+  later(fn) { (this.laters || (this.laters = [])).push(fn); }
+
   // ---- per step ------------------------------------------------------------------------------------------
   step(dt) {
     const G = this.game, eye = G.eye;
+    if (this.laters && this.laters.length) for (const fn of [...this.laters]) if (fn(dt)) this.laters.splice(this.laters.indexOf(fn), 1);
     // load what I come near; drop what I leave well behind (one a step)
     let loads = 0;
     for (const s of this.list) {
@@ -428,6 +451,26 @@ function bareRoom(K, s) {
 }
 void lotWindows; void WALL_T; void _f;
 
+// the lot's own windows on its street face (lotWindows: the far build's lit
+// panes and the near build's dark ones), of a kind and within a floor's
+// height, with their place along the face in the room's frame (lx) - a room
+// that looks out of them sets K.windows to them (their panes are taken out
+// of the city's meshes, the shell is cut at them, a pane of glass is set in)
+Places.prototype.faceWindows = function faceWindows(s, { kinds = ['shop'], y0 = 0, y1 = 4, x0 = -1e9, x1 = 1e9, skipDoor = true } = {}) {
+  const out = [];
+  for (const w of lotWindows(s.lot)) {
+    if (w.nx !== s.door.nx || w.nz !== s.door.nz || !kinds.includes(w.kind) || w.y < y0 || w.y > y1) continue;
+    const p = s.frame.l(w.x, w.z);
+    if (p.x < x0 || p.x > x1) continue;
+    if (skipDoor && Math.hypot(w.x - s.door.x, w.z - s.door.z) < 0.3) continue;
+    out.push({ ...w, lx: p.x });
+  }
+  return out;
+};
+// the holes a room's wall on the street face needs for those windows (solid to walk)
+Places.prototype.windowHoles = function windowHoles(list) {
+  return list.map((w) => ({ a: w.lx - w.w / 2, b: w.lx + w.w / 2, bottom: w.y - w.h / 2, top: w.y + w.h / 2, win: true, own: true }));
+};
 // the holes the street doors need in a room's wall on a side ('s' the street face, ...)
 Places.prototype.doorHoles = function doorHoles(s, side) {
   const out = [];

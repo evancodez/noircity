@@ -41,11 +41,18 @@ export class RoomKit {
     this.F = site.frame; this.mats = interiorMats(this.stage); this.FLOOR = FLOOR;
     this.id = site.ids;
     this.group = new THREE.Group(); this.group.name = 'place ' + site.id;
+    // (what is seen from the street while the place is loaded - a fire escape's ladder: part 9, always drawn)
+    this.outer = new THREE.Group(); this.outer.name = 'place out ' + site.id;
     this.B = new Map();
     this.cols = []; this.floors = []; this.ramps = []; this.vols = []; this.lamps = []; this.doors = [];
     this.uses = []; this.seats = []; this.figs = []; this.props = []; this.meshes = []; this.extra = [];
     this.levels = [FLOOR];
+    // (the floor being built: its walls, colliders, doors, seats and uses are
+    // that floor's - a man on another floor of the same plan walks through them)
+    this.curLvl = null;
   }
+  // build the floor n next (null: every floor; a single-floor room needs none)
+  at(n) { this.curLvl = n; if (n != null && !this.levels.includes(n)) void 0; return this; }
   sfx(name, pos, ref = 2, p = {}) { const S = this.game && this.game.sfx; if (S) S.play(name, pos, p, { ref }); }
 
   // ---- geometry (local) -----------------------------------------------------------------------
@@ -63,14 +70,14 @@ export class RoomKit {
   }
 
   // ---- colliders (local rects -> world boxes) --------------------------------------------------
-  solid(x0, x1, z0, z1, { lvl = null, tag = 'room' } = {}) {
+  solid(x0, x1, z0, z1, { lvl = this.curLvl, tag = 'room' } = {}) {
     const B = this.F.box(x0, x1, z0, z1);
     const c = this.stage.colliders.addBox((B.x0 + B.x1) / 2, (B.z0 + B.z1) / 2, Math.max(0.02, (B.x1 - B.x0) / 2), Math.max(0.02, (B.z1 - B.z0) / 2), 0, tag);
     c.lvl = lvl;
     this.cols.push(c);
     return c;
   }
-  post(x, z, r, { lvl = null, tag = 'room' } = {}) {
+  post(x, z, r, { lvl = this.curLvl, tag = 'room' } = {}) {
     const p = this.F.w(x, z);
     const c = this.stage.colliders.addCircle(p.x, p.z, r, tag);
     c.lvl = lvl;
@@ -80,16 +87,16 @@ export class RoomKit {
 
   // ---- floors, ceilings, walls --------------------------------------------------------------------
   // the walking surface (a rect at y; lvl: the floor's index) and its slab
-  floor(x0, x1, z0, z1, y = FLOOR, key = 'boards', { slab = 0.25, lvl = 0 } = {}) {
+  floor(x0, x1, z0, z1, y = FLOOR, key = 'boards', { slab = 0.25, lvl = this.curLvl ?? 0 } = {}) {
     if (key) this.box(key, x0, x1, y - slab, y, z0, z1, 0);
     this.surface(x0, x1, z0, z1, y, lvl);
   }
-  surface(x0, x1, z0, z1, y, lvl = 0) { this.floors.push({ x0, x1, z0, z1, y, lvl }); }
+  surface(x0, x1, z0, z1, y, lvl = this.curLvl ?? 0) { this.floors.push({ x0, x1, z0, z1, y, lvl }); }
   ceil(x0, x1, z0, z1, y, key = 'plaster') { this.box(key, x0, x1, y, y + 0.22, z0, z1, 0); }
   // a wall along 'x' (at z = c, from x a0 to a1) or along 'z' (at x = c), y0..y1;
   // holes: [{ a, b, top, bottom }] along it (bottom near y0: a doorway - walked
   // through; higher: a window - solid to walk)
-  wall(axis, c, a0, a1, y0, y1, { t = WALL_T, key = 'plaster', holes = [], lvl = null, solid = true, part = 0 } = {}) {
+  wall(axis, c, a0, a1, y0, y1, { t = WALL_T, key = 'plaster', holes = [], lvl = this.curLvl, solid = true, part = 0 } = {}) {
     const H = [...holes].sort((p, q) => p.a - q.a);
     const B = (a, b, ya, yb) => {
       if (b - a < 0.004 || yb - ya < 0.004) return;
@@ -108,18 +115,19 @@ export class RoomKit {
       B(h.a, h.b, top, y1);
       if (bot > y0 + 0.01) B(h.a, h.b, y0, bot);
       // (a doorway is a gap in the collider; a window is not)
-      if (bot < y0 + 0.5) { S(sa, h.a); sa = h.b; }
+      // (own: the hole has a collider of its own - a street window's, which goes when its glass does)
+      if ((bot < y0 + 0.5 && !h.win) || h.own) { S(sa, h.a); sa = h.b; }
       at = h.b;
     }
     B(at, a1, y0, y1);
     S(sa, a1);
   }
   // a room: floor, ceiling, walls outside the rect, its volume (inside, look, dry)
-  room(x0, x1, z0, z1, { y = FLOOR, h = 3.2, floor = 'boards', wall = 'plaster', ceil = 'plaster', sides = {}, t = WALL_T, look = {}, lvl = 0, name = null } = {}) {
+  room(x0, x1, z0, z1, { y = FLOOR, h = 3.2, floor = 'boards', wall = 'plaster', ceil = 'plaster', sides = {}, t = WALL_T, look = {}, lvl = this.curLvl ?? 0, name = null } = {}) {
     if (floor) this.floor(x0 - t, x1 + t, z0 - t, z1 + t, y, floor, { lvl }); else this.surface(x0, x1, z0, z1, y, lvl);
     if (ceil) this.ceil(x0 - t, x1 + t, z0 - t, z1 + t, y + h, ceil);
     const side = (k) => (sides[k] === undefined ? true : sides[k]);
-    const opt = (k) => ({ t, key: wall, holes: (side(k) && side(k).holes) || [], lvl: lvl ? lvl : null });
+    const opt = (k) => ({ t, key: wall, holes: (side(k) && side(k).holes) || [], lvl: this.curLvl });
     if (side('n')) this.wall('x', z0 - t / 2, x0 - t, x1 + t, y, y + h, opt('n'));
     if (side('s')) this.wall('x', z1 + t / 2, x0 - t, x1 + t, y, y + h, opt('s'));
     if (side('w')) this.wall('z', x0 - t / 2, z0, z1, y, y + h, opt('w'));
@@ -134,7 +142,7 @@ export class RoomKit {
 
   // ---- stairs and rails -----------------------------------------------------------------------------
   // a flight from y0 to y1 inside the rect, going up toward dir ('n': -z, 's': +z, 'w': -x, 'e': +x)
-  stairs(x0, x1, z0, z1, y0, y1, dir, { key = 'wood', lvl = 0, part = 1, under = true } = {}) {
+  stairs(x0, x1, z0, z1, y0, y1, dir, { key = 'wood', lvl = this.curLvl ?? 0, part = 1, under = true } = {}) {
     const run = dir === 'n' || dir === 's' ? z1 - z0 : x1 - x0;
     const n = Math.max(2, Math.round((y1 - y0) / 0.19));
     const rise = (y1 - y0) / n, tread = run / n;
@@ -148,7 +156,7 @@ export class RoomKit {
     }
     this.ramps.push({ x0, x1, z0, z1, y0, y1, dir, lvl });
   }
-  rail(x0, z0, x1, z1, y, { h = 0.95, solid = true, lvl = null, key = 'iron', step = 1.1 } = {}) {
+  rail(x0, z0, x1, z1, y, { h = 0.95, solid = true, lvl = this.curLvl, key = 'iron', step = 1.1 } = {}) {
     const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / step));
     for (let i = 0; i <= n; i++) { const t = i / n; this.cyl(key, x0 + (x1 - x0) * t, y, y + h, z0 + (z1 - z0) * t, 0.022, 0.022, 6, 2); }
     const g = new THREE.CylinderGeometry(0.03, 0.03, L, 6).rotateZ(Math.PI / 2).rotateY(-Math.atan2(z1 - z0, x1 - x0)).translate((x0 + x1) / 2, y + h, (z0 + z1) / 2);
@@ -190,9 +198,9 @@ export class RoomKit {
   floorAt(y) { let best = FLOOR; for (const f of this.levels) if (f <= y && f > best) best = f; return best; }
 
   // ---- doors, seats, uses ---------------------------------------------------------------------------
-  door(spec) { return makeDoor(this, spec); }
-  seat(s) { const S = { prompt: 'sit', range: 1.9, cone: 0.5, eyeY: FLOOR + 1.25, ...s }; this.seats.push(S); return S; }
-  use(u) { const U = { range: 1.9, cone: 0.45, ...u }; this.uses.push(U); return U; }
+  door(spec) { return makeDoor(this, { lvl: this.curLvl, ...spec }); }
+  seat(s) { const S = { prompt: 'sit', range: 1.9, cone: 0.5, eyeY: FLOOR + 1.25, lvl: this.curLvl, ...s }; this.seats.push(S); return S; }
+  use(u) { const U = { range: 1.9, cone: 0.45, lvl: this.curLvl, ...u }; this.uses.push(U); return U; }
 
   // ---- props and people ------------------------------------------------------------------------------
   prop(kind, x, y, z, yaw = 0, { variant = null, scale = 1, name = null } = {}) {
@@ -232,12 +240,13 @@ export class RoomKit {
       m.castShadow = Number(part) > 0 && !glow; m.receiveShadow = !glow;
       if (glow) m.userData.noRay = true;
       m.name = `${this.site.id} ${key}`;
-      this.group.add(m);
+      if (Number(part) === 9) { m.userData.inkId = this.id + 1; this.outer.add(m); } else this.group.add(m);
       this.meshes.push(m);
     }
     this.B.clear();
     finishLabels(this);
     this.group.updateMatrixWorld(true);
+    this.outer.updateMatrixWorld(true);
     return this.meshes;
   }
   dispose() {
@@ -249,5 +258,6 @@ export class RoomKit {
     if (this.labelTex) { this.labelTex.dispose(); this.labelMat.dispose(); }
     this.meshes.length = 0; this.extra.length = 0; this.cols.length = 0;
     if (this.group.parent) this.group.parent.remove(this.group);
+    if (this.outer.parent) this.outer.parent.remove(this.outer);
   }
 }

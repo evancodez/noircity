@@ -21,27 +21,30 @@ export function counter(K, x0, x1, z0, z1, { y = K.FLOOR, h = 1.05, dir = 's', t
 }
 // the back bar: a lit mirror behind rows of bottles (the reference's lit
 // glass behind black shapes), the shelves, a cabinet under them
-export function backBar(K, x0, x1, z, { y = K.FLOOR, dir = 's', rows = 3, lit = 'lit', rng = Math.random, cab = 0.95 } = {}) {
-  const [, dz] = D[dir];
-  const zb = z, zf = z + dz * 0.42;
-  K.box('wood', x0, x1, y, y + cab, Math.min(zb, zf), Math.max(zb, zf), 1);
-  K.solid(x0, x1, Math.min(zb, zf), Math.max(zb, zf));
+export function backBar(K, a0, a1, c, { y = K.FLOOR, dir = 's', rows = 3, lit = 'lit', rng = Math.random, cab = 0.95 } = {}) {
+  const [dx, dz] = D[dir];
+  const along = dz !== 0, sg = along ? dz : dx;
+  // (a: along the wall, q: out from it)
+  const B = (p0, p1, ya, yb, q0, q1, key, part = 1) => { const qa = Math.min(q0, q1), qb = Math.max(q0, q1); if (along) K.box(key, p0, p1, ya, yb, qa, qb, part); else K.box(key, qa, qb, ya, yb, p0, p1, part); };
+  const qf = c + sg * 0.42;
+  B(a0, a1, y, y + cab, c, qf, 'wood');
+  if (along) K.solid(a0, a1, Math.min(c, qf), Math.max(c, qf)); else K.solid(Math.min(c, qf), Math.max(c, qf), a0, a1);
   const y0 = y + cab + 0.1, y1 = y0 + rows * 0.42 + 0.1;
   // the lit glass, a hair off the wall
-  K.box(lit, x0 + 0.1, x1 - 0.1, y0, y1, zb + dz * 0.02, zb + dz * 0.04, 2);
+  B(a0 + 0.1, a1 - 0.1, y0, y1, c + sg * 0.02, c + sg * 0.04, lit, 2);
   for (let r = 0; r <= rows; r++) {
     const yy = y0 + r * 0.42;
-    K.box('wood', x0, x1, yy - 0.03, yy, Math.min(zb, zb + dz * 0.26), Math.max(zb, zb + dz * 0.26), 1);
+    B(a0, a1, yy - 0.03, yy, c, c + sg * 0.26, 'wood');
     if (r === rows) break;
     // bottles: black lathes on the shelf, seeded heights
-    for (let x = x0 + 0.18; x < x1 - 0.12; x += 0.13 + rng() * 0.12) {
+    for (let a = a0 + 0.18; a < a1 - 0.12; a += 0.13 + rng() * 0.12) {
       if (rng() < 0.18) continue;
-      const hh = 0.22 + rng() * 0.12, w = 0.035 + rng() * 0.012;
+      const hh = 0.22 + rng() * 0.12, w = 0.035 + rng() * 0.012, q = c + sg * (0.1 + rng() * 0.08);
       const g = lathe([[0.0001, 0], [w, 0], [w, hh * 0.62], [w * 0.4, hh * 0.78], [w * 0.32, hh], [0.0001, hh]], 10);
-      K.add('black', g.translate(x, yy, zb + dz * (0.1 + rng() * 0.08)), 3);
+      K.add('black', along ? g.translate(a, yy, q) : g.translate(q, yy, a), 3);
     }
   }
-  K.box('wood', x0 - 0.05, x1 + 0.05, y1, y1 + 0.12, Math.min(zb, zb + dz * 0.3), Math.max(zb, zb + dz * 0.3), 1);
+  B(a0 - 0.05, a1 + 0.05, y1, y1 + 0.12, c, c + sg * 0.3, 'wood');
 }
 export function stool(K, x, z, { y = K.FLOOR, h = 0.76, solid = true } = {}) {
   K.add('chrome', lathe([[0.0001, 0], [0.2, 0], [0.2, 0.025], [0.04, 0.05], [0.03, h - 0.06], [0.05, h - 0.05], [0.0001, h - 0.05]], 16).translate(x, y, z), 1);
