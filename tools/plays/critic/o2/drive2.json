@@ -1,0 +1,284 @@
+{
+ "about": "[O2 critic] the first drive from BEGIN, traced: W into the stopped car ahead, reverse, turn",
+ "url": "/?mute=1",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o2critic/drive2",
+ "steps": [
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "shot": "c06"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "shot": "c09"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 350
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "shot": "c13"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "shot": "c_rev"
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "({ t: G.time.toFixed(1), v: G.city.car.speed.toFixed(1), p: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], yaw: G.city.car.yaw.toFixed(2), dmg: G.city.car.damage.toFixed(2), near: G.vehicles.list.filter(v=>v!==G.city.car).map(v=>({k:v.kind, d:Math.hypot(v.pos.x-G.city.car.pos.x,v.pos.z-G.city.car.pos.z), v:v.speed, dr: v.driver ? (v.driver==='player'?'P':'ai') : '-'})).sort((a,b)=>a.d-b.d).slice(0,2).map(o=>o.k+' '+o.d.toFixed(1)+'m v'+o.v.toFixed(1)+' '+o.dr).join(' | '), prompt: G.hud.promptShown, warn: G.hud.kit && G.hud.kit.warnText })"
+  },
+  {
+   "shot": "c_end"
+  },
+  {
+   "up": "KeyW"
+  }
+ ]
+}

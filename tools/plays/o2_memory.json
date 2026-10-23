@@ -1,0 +1,14 @@
+{
+ "about": "[O2] Memory in the traffic (brief O2 §5: memory flat after ten minutes in traffic): the drive-through's loop through every district twice (11 minutes a loop), the heap after a collection and the renderer's geometries, textures and programs taken at the start, at the end of the first loop and at the end of the second - the same place, the same streets round it: the second no more than the first (heap within 6 %, geometries within 10 %, programs and textures not growing). node tools/play.mjs tools/plays/o2_memory.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o2/memory",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1000 },
+  { "drive": "tools/lib/o2_wheels.mjs", "mode": "drive", "again": true, "timeout": 1000000,
+    "check": "D.end === 'done' && D.mem.length === 3 && D.mem[2].heapMB < D.mem[1].heapMB * 1.06 && D.mem[2].geo < D.mem[1].geo * 1.1 && D.mem[2].prog <= D.mem[1].prog + 2 && D.mem[2].tex <= D.mem[1].tex + 2", "label": "memory flat: after the second loop (or as far as it got in its time) no more than after the first" }
+ ]
+}

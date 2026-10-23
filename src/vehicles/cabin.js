@@ -61,7 +61,8 @@ export class Cabin {
 
   place() {
     if (!this.car) return;
-    const e = this.car.seat(COUPE.eye, _v);
+    // [O2] (the seat of the car I am in: a fleet car's own, cabin.eye)
+    const e = this.car.seat(this.eye || COUPE.eye, _v);
     this.box.min.set(e.x - 0.9, e.y - 1.0, e.z - 0.9);
     this.box.max.set(e.x + 0.9, e.y + 0.45, e.z + 0.9);
   }

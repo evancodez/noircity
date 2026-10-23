@@ -58,7 +58,7 @@ export const input = { last: 'keys' };
 // [O7] a gun of mine (O4's save.inventory): the d-pad's left / right turn through them
 const hasGun = (G) => !!(G && G.save && (G.save.inventory || []).some((k) => k === 'revolver' || k === 'shotgun' || k === 'tommy'));
 
-const KEYNAME = { Space: ' ', KeyE: 'e', KeyC: 'c', KeyR: 'r', KeyF: 'f', KeyQ: 'q', KeyM: 'm', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', ShiftLeft: 'Shift', ControlLeft: 'Control', Escape: 'Escape', Tab: 'Tab' };
+const KEYNAME = { Space: ' ', KeyE: 'e', KeyC: 'c', KeyR: 'r', KeyF: 'f', KeyQ: 'q', KeyM: 'm', KeyV: 'v', KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd', ShiftLeft: 'Shift', ControlLeft: 'Control', Escape: 'Escape', Tab: 'Tab' };
 const curve = (u, C) => C.lin * u + (1 - C.lin) * Math.pow(u, C.pow);
 
 class Pad {
@@ -349,6 +349,8 @@ class Pad {
     if (armed && (edge(BTN.left) || edge(BTN.right)) && (document.pointerLockElement === this.dom || this.holds)) this.game._mouseAcc.wheel += edge(BTN.right) ? PAD.notch : -PAD.notch;
     if (on(BTN.up) || (on(BTN.left) && !armed) || (on(BTN.right) && ctx !== 'drive' && !armed)) want.add('KeyQ');
     if (ctx === 'drive' && on(BTN.right)) want.add('KeyF');
+    // [O2] R3 in the car: the view (the seat, or behind the car - V)
+    if (ctx === 'drive' && edge(BTN.R3)) this.tap('KeyV');
     if (on(BTN.touch)) want.add('Tab');
     if (edge(BTN.down)) this.tap('KeyM');
     if (edge(BTN.share) || edge(BTN.touch)) this.tap('Tab');   // [O1b] the rulebook's Tab (what I carry, for a moment)

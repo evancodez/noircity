@@ -1,0 +1,33 @@
+{
+ "about": "[O2] The jank bench (brief O2 §5; after the critic, M1), part one: my coupe head on at 25 km/h into the coupe, the saloon, the taxi and the police car (up the Yards' Straight, no moving traffic, 24 m between them: each met alone) and into the tram; after each, no two cars inside each other, and S backs me off it at once (over 2 m in 1.6 s). Part two: o2_bench2 (the hearse, the van, the lorry). node tools/play.mjs tools/plays/o2_bench.json",
+ "url": "/?mute=1&start=city&car=-448,262,1.5708&lineup=coupe,saloon,taxi,police&gap=24&notraffic=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_bench",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "bench",
+   "check": "D.worst < 0.3 && D.backedAll && ['coupe', 'saloon', 'taxi', 'police'].every((k) => D.met.includes(k))",
+   "label": "the coupe, the saloon, the taxi and the police car met head on, the tram run at: nothing through, S backs off each at once"
+  }
+ ]
+}

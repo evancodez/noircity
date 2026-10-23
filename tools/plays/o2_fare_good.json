@@ -1,0 +1,35 @@
+{
+ "about": "[O2] The fares, good hands (brief O2 §4, §5): a hail on my way, stopped by him, he gets in, the line says where, there by the roads, paid. node tools/play.mjs tools/plays/o2_fare_good.json",
+ "url": "/?mute=1&start=city&ckind=taxi",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o2/o2_fare_good",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "fare",
+   "hands": "good",
+   "fares": 2,
+   "check": "D.stats.paid === 2 && D.stats.lost === 0 && D.fares.every((f) => f.shown && f.shown.ring != null && f.shown.ring < 1 && f.shown.lantern)",
+   "label": "good: there and paid, twice in a row"
+  }
+ ]
+}

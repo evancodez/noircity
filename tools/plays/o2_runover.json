@@ -1,0 +1,61 @@
+{
+ "about": "[O2] after the critic (B5): in a taxi, the man hailing on the pavement driven at - he is the street's own (O3's Person): knocked down by the car (not driven through), the car jolted, the fare gone, the crime the city's. node tools/play.mjs tools/plays/o2_runover.json",
+ "url": "/?mute=1&start=city&ckind=taxi",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_runover",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "({ inCar: G.city.inCar, kind: G.city.car && G.city.car.kind })"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "key": "KeyV",
+   "hold": 80
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "v_pressed"
+  },
+  {
+   "drive": "tools/plays/critic/o2/cold.mjs",
+   "mode": "runover"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "after"
+  },
+  {
+   "expect": "G.people.stats.hitByCar >= 1 && G.wheels.fares.stats.hurt === 1 && G.crime.log.some((c) => c.by === 'player' && (c.kind === 'punch' || c.kind === 'death'))",
+   "label": "he was hit, not passed through: down, the fare gone, the crime logged"
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "about": "[O2] The drive-through in the traffic (brief O2 §5): from Grand Ave a driver drives O1's loop through every district by real keys (W / S / A / D, braking for what is ahead in its lane: tools/lib/o2_wheels.mjs 'drive') with the traffic, the parked cars and the tram on - no car inside another or a wall (any two cars' boxes overlapping by 0.3 m, checked every third frame), no car come or gone in my view, no hitch over 50 ms (3 allowed, as O1's), nothing waiting at a junction more than 10 s but at a red, every district reached. node tools/play.mjs tools/plays/o2_drive.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o2/drive",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1000 },
+  { "drive": "tools/lib/o2_wheels.mjs", "mode": "drive", "timeout": 1000000, "shots": { "60": "d01", "500": "d02", "900": "d03" },
+    "check": "D.end === 'done' && D.overlap === 0 && D.inWall === 0 && D.districts.length >= 5 && (D.traffic.popIn || 0) === 0 && (D.traffic.popOut || 0) === 0 && D.traffic.maxWait < 10", "label": "the drive-through in the traffic: every district, nothing through anything, nothing come or gone in view, nothing stuck" },
+  { "expect": "window.__o2rec.w16 === 0 && window.__o2rec.w8 <= 3", "label": "the wheels' own step (traffic, parked, signals, tram, the things to do) never over 16 ms, over 8 ms at most 3 times" },
+  { "expect": "window.__o2rec.over50 <= 3", "label": "no frame over 50 ms (3 allowed, as O1's) - the whole frame, on this machine as loaded" },
+  { "eval": "({ calls: N.renderer.info.render.calls, tris: N.renderer.info.render.triangles, mem: N.renderer.info.memory })" }
+ ]
+}

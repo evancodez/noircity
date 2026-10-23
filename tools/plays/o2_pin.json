@@ -1,0 +1,83 @@
+{
+ "about": "[O2] after the critic (M2, M1): W held into a car parked ahead with no steer - the car stays against it (never a turn on the spot by itself: the yaw kept within 0.1 rad for 3 s of W), then S backs it off at once (over 2 m in 1.6 s). node tools/play.mjs tools/plays/o2_pin.json",
+ "url": "/?mute=1&start=city&park=saloon,lorry",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_pin",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 4000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.city.car.stats.crashes + G.city.car.stats.scrapes > 0 || G.city.car.touchT < 0.1",
+   "timeout": 6000
+  },
+  {
+   "eval": "(window.__pin = { yaw: G.city.car.yaw, x: G.city.car.pos.x, z: G.city.car.pos.z }, { yaw: +G.city.car.yaw.toFixed(3), v: +G.city.car.speed.toFixed(2) })"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({ dyaw: +Math.abs(Math.atan2(Math.sin(G.city.car.yaw - __pin.yaw), Math.cos(G.city.car.yaw - __pin.yaw))).toFixed(3), moved: +Math.hypot(G.city.car.pos.x - __pin.x, G.city.car.pos.z - __pin.z).toFixed(2), pinT: +(G.city.car.pinT || 0).toFixed(2) })"
+  },
+  {
+   "expect": "Math.abs(Math.atan2(Math.sin(G.city.car.yaw - __pin.yaw), Math.cos(G.city.car.yaw - __pin.yaw))) < 0.1",
+   "label": "W held against it, no steer: no turn on the spot"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "(window.__pin2 = { x: G.city.car.pos.x, z: G.city.car.pos.z }, 1)"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 1600
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "eval": "({ backed: +Math.hypot(G.city.car.pos.x - __pin2.x, G.city.car.pos.z - __pin2.z).toFixed(2) })"
+  },
+  {
+   "expect": "Math.hypot(G.city.car.pos.x - __pin2.x, G.city.car.pos.z - __pin2.z) > 2",
+   "label": "S backs off it at once"
+  }
+ ]
+}
