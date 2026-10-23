@@ -1,0 +1,15 @@
+{
+ "about": "[O6] A car burnt to the wreck (brief O6 §2, §4): at the bed, across the road from the parked sedan, the Tommy gun into its bonnet until it burns (steam, smoke, then fire: flames at its seams, black smoke), then back off (S) and watch: the blast (the flash, the push - what stands near goes over), the wreck (a burnt body on its rims, the fire on it). Never too near: I am not hurt to the fall. node tools/play.mjs tools/plays/o6_burn.json",
+ "url": "/?mute=1&start=smash",
+ "size": [1280, 800],
+ "out": "shots/o6/burn",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 1200 },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "burn", "from": [-125.4, 21.5], "after": 3000, "shots": { "burning": "b1_burning", "blast": "b2_blast", "wreck": "b3_wreck" },
+    "check": "D.t[0] && D.t[0][2].state === 'burning' && D.end.wreck && !D.end.fail && D.end.fires > 0",
+    "label": "the sedan shot to fire, then the blast and the wreck, me standing" }
+ ]
+}

@@ -1,0 +1,83 @@
+{
+ "about": "[O6 critic] the burn beat: walk up to the burning sedan, E at it, stand by it hands off: the warning? the blast at 2 m?",
+ "url": "/?mute=1&start=smash.burn",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o6/near",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 4,
+   "every": 3500
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1), hp:G.health.hp, warn:G.hud.kit.warnText||null, failing:!!G.failing, lf:G.lastFail||null, sd:G.city.cars[2].smashD.state, fuse:G.city.cars[2].smashD.fuse!=null?+G.city.cars[2].smashD.fuse.toFixed(1):null, d:+Math.hypot(G.camera.position.x-G.city.cars[2].pos.x,G.camera.position.z-G.city.cars[2].pos.z).toFixed(1), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "walk": "(() => { const c = G.city.cars[2]; return [[c.pos.x + c.fwd.x * 0.2 + 2.2, c.pos.z + c.fwd.z * 0.2 + 1.0]]; })()",
+   "timeout": 9000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1), hp:G.health.hp, warn:G.hud.kit.warnText||null, failing:!!G.failing, lf:G.lastFail||null, sd:G.city.cars[2].smashD.state, fuse:G.city.cars[2].smashD.fuse!=null?+G.city.cars[2].smashD.fuse.toFixed(1):null, d:+Math.hypot(G.camera.position.x-G.city.cars[2].pos.x,G.camera.position.z-G.city.cars[2].pos.z).toFixed(1), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 300
+  },
+  {
+   "eval": "JSON.stringify({inCar: G.city.inCar})"
+  },
+  {
+   "until": "G.failing || G.city.cars[2].wrecked",
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1), hp:G.health.hp, warn:G.hud.kit.warnText||null, failing:!!G.failing, lf:G.lastFail||null, sd:G.city.cars[2].smashD.state, fuse:G.city.cars[2].smashD.fuse!=null?+G.city.cars[2].smashD.fuse.toFixed(1):null, d:+Math.hypot(G.camera.position.x-G.city.cars[2].pos.x,G.camera.position.z-G.city.cars[2].pos.z).toFixed(1), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "shot": "n1"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1), hp:G.health.hp, warn:G.hud.kit.warnText||null, failing:!!G.failing, lf:G.lastFail||null, sd:G.city.cars[2].smashD.state, fuse:G.city.cars[2].smashD.fuse!=null?+G.city.cars[2].smashD.fuse.toFixed(1):null, d:+Math.hypot(G.camera.position.x-G.city.cars[2].pos.x,G.camera.position.z-G.city.cars[2].pos.z).toFixed(1), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1), hp:G.health.hp, warn:G.hud.kit.warnText||null, failing:!!G.failing, lf:G.lastFail||null, sd:G.city.cars[2].smashD.state, fuse:G.city.cars[2].smashD.fuse!=null?+G.city.cars[2].smashD.fuse.toFixed(1):null, d:+Math.hypot(G.camera.position.x-G.city.cars[2].pos.x,G.camera.position.z-G.city.cars[2].pos.z).toFixed(1), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1), hp:G.health.hp, warn:G.hud.kit.warnText||null, failing:!!G.failing, lf:G.lastFail||null, sd:G.city.cars[2].smashD.state, fuse:G.city.cars[2].smashD.fuse!=null?+G.city.cars[2].smashD.fuse.toFixed(1):null, d:+Math.hypot(G.camera.position.x-G.city.cars[2].pos.x,G.camera.position.z-G.city.cars[2].pos.z).toFixed(1), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 4000
+  },
+  {
+   "eval": "JSON.stringify({t:+G.time.toFixed(1), hp:G.health.hp, warn:G.hud.kit.warnText||null, failing:!!G.failing, lf:G.lastFail||null, sd:G.city.cars[2].smashD.state, fuse:G.city.cars[2].smashD.fuse!=null?+G.city.cars[2].smashD.fuse.toFixed(1):null, d:+Math.hypot(G.camera.position.x-G.city.cars[2].pos.x,G.camera.position.z-G.city.cars[2].pos.z).toFixed(1), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  }
+ ]
+}

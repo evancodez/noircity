@@ -1,0 +1,13 @@
+{
+ "about": "[O6 critic] what stands round the bed (to aim the plays): kinds near the start, the camera's pitch.",
+ "url": "/?mute=1&start=smash",
+ "size": [960, 600],
+ "out": "shots/critic_o6/probe",
+ "steps": [
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 3, "every": 3000 },
+  { "wait": 2000 },
+  { "eval": "JSON.stringify(G.stage.smash.items.map(i=>[i.kind,+(i.x).toFixed(1),+(i.z).toFixed(1),i.state]).filter(a=>Math.abs(a[1]+118)<22&&Math.abs(a[2]-15)<45))" },
+  { "eval": "JSON.stringify({rot:G.camera.rotation.toArray().slice(0,3).map(v=>+(+v).toFixed(2)), keys:Object.keys(G.city), pl:Object.keys(G.player||{}).slice(0,40)})" }
+ ]
+}
