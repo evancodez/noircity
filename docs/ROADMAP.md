@@ -34,6 +34,12 @@ streets that do not repeat. Pushed as each lands (today, Oct 23).
   (the gym, the diner, two bars, the gun shop, the garage, the hotel
   with its save, the police station, two hideouts, the market hall, the
   theatre, the tenement stairs to the roofs).
+- **O8 figures** (after people and combat merge): one cast on one rig
+  for every system in the Hood's look (the face in the brim's shadow,
+  nothing blocky, nothing balloon), a dozen kinds in seeded variants,
+  blended clips over procedural layers, a light ragdoll for falls and
+  car hits within reason, AI whose intention a player reads before the
+  act; never stiff, never glitchy.
 - **O7 the night**: the HUD (heat badges, money, the minimap bottom
   left), the full map on M, saves, the car radio and the city's sound,
   the title with the live city behind it, the pad through everything,
@@ -41,9 +47,11 @@ streets that do not repeat. Pushed as each lands (today, Oct 23).
   board, the matchbooks), and the whole-game havoc hunt.
 Target: the weekend (Oct 24 to 25).
 
-## Phase 3: the user's rounds
-After each push the user plays; what he says becomes short follow-up
-lanes (`O2b`, `O6b`, ... ) at `high` effort: the feel of a thing, a
+## Phase 3: the rounds (without waiting for the user)
+The user said not to wait for him to play: phases 3 and 4 run on the
+art director's own judgement and the critics' findings; his words, when
+they come, go into the briefs. What a critic or the merge check finds
+becomes short follow-up lanes (`O2b`, `O6b`, ... ) at `high` effort: the feel of a thing, a
 system that answers too little, a place that is not fun. A lane that
 landed short of a `[must]` gets its follow-up without waiting for him.
 
