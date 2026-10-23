@@ -74,9 +74,15 @@ export class Fares {
       F.dist += v.speedAbs * dt;
       const d = Math.hypot(v.pos.x - F.dest.x, v.pos.z - F.dest.z);
       // (on his way? the distance to go falling)
-      // (sitting there with him in the back: the clock runs; on the move, it eases off)
+      // (sitting there with him in the back: the clock runs; on the move, it eases
+      // off; stood at a light or behind a car in my lane is not sitting there)
       if (d < F.best) F.best = d;
-      F.idleT = v.speedAbs < 1.5 ? F.idleT + dt : Math.max(0, F.idleT - dt * 2);
+      let held = false;
+      if (v.speedAbs < 1.5) {
+        held = this.W.signals.nodes.some((n) => Math.abs(n.x - v.pos.x) < 32 && Math.abs(n.z - v.pos.z) < 32);
+        if (!held) for (const o of this.W.bodies()) { if (o === v || !o.spec || Math.abs(o.pos.x - v.pos.x) > 16 || Math.abs(o.pos.z - v.pos.z) > 16) continue; const l = v.local(o.pos, _v); if (l.x > 2 && l.x < 15 && Math.abs(l.z) < 2.6) { held = true; break; } }
+      }
+      F.idleT = v.speedAbs < 1.5 && !held ? F.idleT + dt : Math.max(0, F.idleT - dt * 2);
       if (F.idleT > 20 && !F.nagged) { F.nagged = true; hud.warn('Come on.'); F.warnT = 3; }
       if (F.idleT > 40) { this.stats.idle++; this.lose('He got out.'); return; }
       if (F.warnT > 0) { F.warnT -= dt; if (F.warnT <= 0) hud.warn(null); }

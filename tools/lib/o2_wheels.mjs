@@ -326,14 +326,14 @@ async function race(P, { js, sleep, log, shot }, H) {
   for (let i = 0; i < 100; i++) { const r = await js('G.wheels.race.state'); if (r === 'run') break; await sleep(60); }
   if (P.opts.strip) { await P.set('KeyW', true); for (let k = 0; k < 4; k++) { await sleep(300); if (shot) await shot('strip_go' + k); } await P.set('KeyW', false); return { strip: true }; }
   if (shot) await shot('grid');
-  const pts = await js(`(() => { const R = G.wheels.race, P = R.path, out = []; for (let s = R.s0; s < R.s0 + R.len + 40; s += 3) { const p = P.at(s, {}); out.push([p.x, p.z]); } return out; })()`);
+  const pts = await js(`(() => { const R = G.wheels.race, P = R.path, out = []; for (let s = R.s0; s < R.s0 + R.len + 40; s += 3) { const p = P.at(s, {}); out.push([p.x, p.z, p.v]); } return out; })()`);
   // (bad hands: late off the line; idle: never)
   if (H.name === 'idle') {
     for (let i = 0; i < 600; i++) { const r = await js('G.wheels.race.state'); if (r === 'done' || r === 'idle') break; await sleep(500); }
   } else {
     await sleep(H.react);
     const shots = new Set();
-    await P.driveAlong(pts, { speed: H.name === 'good' ? 21 : H.name === 'medium' ? 19 : 16, timeout: 300000,
+    await P.driveAlong(pts, { speed: 23, timeout: 300000,
       until: async () => { const r = await js('G.wheels.race.state'); return r !== 'run'; },
       onStep: async (s, idx) => { if (shot && idx > 20 && !shots.has('a')) { shots.add('a'); await shot('start'); } } });
   }
