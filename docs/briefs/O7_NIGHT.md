@@ -154,3 +154,10 @@ and shown; the whole play twice; the saves; the pad; the fps table;
 errors; the report `docs/reports/O7.md` with "What the user should
 feel", "Found and fixed", "The middle, audited", "Left". Edits to shared
 files marked `// [O7]`. Hours, not days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+Yours, in your fix pass: **finding 2**, the title's key line promises
+verbs the city does not have yet and lists M twice: one line per device
+(keys, pad) that is true of the city as built, kept true as lanes merge.
+And its section 2 (what is good and must not be lost) is a list your
+whole-game check keeps.

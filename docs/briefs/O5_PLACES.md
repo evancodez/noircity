@@ -127,3 +127,12 @@ other lanes" (the kit's pieces and plan format, `places.enter`,
 first (the kit, every door opening on a bare room, the hotel's save),
 then the rooms one by one in the order a player finds them. Hours, not
 days.
+
+## From the cold play of the merged city (`docs/reports/CITY_COLD_PLAY.md`): yours
+**Finding 6** is a bug under your feet: `doorNear` in
+`src/stages/noircity/parts/stream.js` (line 144) searches only the chunks
+around the player while each door is stored in its lot's chunk, so about
+one street door in four gives no prompt and E does nothing, and your
+`city:door` depends on it. If O1b's fix has not reached main when you need
+it, fix it first yourself (a play that tries every door of a block) and
+mark it `[O5]`; take O1b's from main if it lands first.
