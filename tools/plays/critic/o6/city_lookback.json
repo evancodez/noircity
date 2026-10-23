@@ -1,0 +1,150 @@
+{
+ "about": "[O6 critic] the city: a short run up Grand Ave's east kerb, out, back on foot to what went over: does it lie where it fell, the hydrant's column, walk into it.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o6/look",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 4,
+   "every": 3500
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "down": "KeyD"
+  },
+  {
+   "wait": 220
+  },
+  {
+   "up": "KeyD"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 130
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "wait": 1700
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 1800
+  },
+  {
+   "up": "KeyS"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, eye:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], pitch:+N.controller.pitch.toFixed(2), ev:G.stage.smash.events.map(e=>e.kind+':'+e.what), lies:G.stage.smash.out.map(i=>i.kind+':'+i.state+(i.lie?'@'+i.lie.cx.toFixed(1)+','+i.lie.cz.toFixed(1):'')+(i.P?' y'+i.P.y.toFixed(2):''))})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "look": [
+    1750,
+    120
+   ],
+   "steps": 14
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "k1_back"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, eye:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], pitch:+N.controller.pitch.toFixed(2), ev:G.stage.smash.events.map(e=>e.kind+':'+e.what), lies:G.stage.smash.out.map(i=>i.kind+':'+i.state+(i.lie?'@'+i.lie.cx.toFixed(1)+','+i.lie.cz.toFixed(1):'')+(i.P?' y'+i.P.y.toFixed(2):''))})"
+  },
+  {
+   "walk": [
+    [
+     -110.5,
+     -12
+    ]
+   ],
+   "timeout": 12000,
+   "stop": false
+  },
+  {
+   "wait": 300
+  },
+  {
+   "look": "(() => { const C = N.controller, e = G.camera.position; const dx = -110.5 - e.x, dz = -8 - e.z; let d = Math.atan2(-dx, -dz) - C.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); return [-d / C.sensitivity, (C.pitch + 0.25) / C.sensitivity]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "k2_hydrant"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, eye:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], pitch:+N.controller.pitch.toFixed(2), ev:G.stage.smash.events.map(e=>e.kind+':'+e.what), lies:G.stage.smash.out.map(i=>i.kind+':'+i.state+(i.lie?'@'+i.lie.cx.toFixed(1)+','+i.lie.cz.toFixed(1):'')+(i.P?' y'+i.P.y.toFixed(2):''))})"
+  },
+  {
+   "walk": [
+    [
+     -110.5,
+     -8.6
+    ]
+   ],
+   "into": true,
+   "timeout": 5000
+  },
+  {
+   "wait": 300
+  },
+  {
+   "shot": "k3_in_water"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, eye:[+G.camera.position.x.toFixed(1),+G.camera.position.z.toFixed(1)], pitch:+N.controller.pitch.toFixed(2), ev:G.stage.smash.events.map(e=>e.kind+':'+e.what), lies:G.stage.smash.out.map(i=>i.kind+':'+i.state+(i.lie?'@'+i.lie.cx.toFixed(1)+','+i.lie.cz.toFixed(1):'')+(i.P?' y'+i.P.y.toFixed(2):''))})"
+  }
+ ]
+}

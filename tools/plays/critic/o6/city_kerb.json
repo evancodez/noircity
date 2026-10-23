@@ -1,0 +1,132 @@
+{
+ "about": "[O6 critic] the city cold (?start=city): E into the coupe, W, onto the kerb, through what the city stands there; out, look back.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o6/city",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 4,
+   "every": 3500
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "shot": "c0"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, dmg:G.city.car&&+G.city.car.damage.toFixed(2), sd:G.city.car&&G.city.car.smashD&&G.city.car.smashD.state, s:G.stage.smash&&G.stage.smash.stats, ev:G.stage.smash&&G.stage.smash.events.slice(-6).map(e=>e.kind+':'+e.what), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "eval": "JSON.stringify({car:G.city.car.pos.toArray().map(v=>+v.toFixed(1)), yaw:+G.city.car.yaw.toFixed(2), near:G.stage.smash.items.filter(i=>Math.hypot(i.x-G.city.car.pos.x,i.z-G.city.car.pos.z)<40).map(i=>i.kind+'@'+i.x.toFixed(0)+','+i.z.toFixed(0))})"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "down": "KeyD"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "up": "KeyD"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 150
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "shot": "c1"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, dmg:G.city.car&&+G.city.car.damage.toFixed(2), sd:G.city.car&&G.city.car.smashD&&G.city.car.smashD.state, s:G.stage.smash&&G.stage.smash.stats, ev:G.stage.smash&&G.stage.smash.events.slice(-6).map(e=>e.kind+':'+e.what), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "c2"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, dmg:G.city.car&&+G.city.car.damage.toFixed(2), sd:G.city.car&&G.city.car.smashD&&G.city.car.smashD.state, s:G.stage.smash&&G.stage.smash.stats, ev:G.stage.smash&&G.stage.smash.events.slice(-6).map(e=>e.kind+':'+e.what), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "c3"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, dmg:G.city.car&&+G.city.car.damage.toFixed(2), sd:G.city.car&&G.city.car.smashD&&G.city.car.smashD.state, s:G.stage.smash&&G.stage.smash.stats, ev:G.stage.smash&&G.stage.smash.events.slice(-6).map(e=>e.kind+':'+e.what), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "Space"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "Space"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "look": [
+    1800,
+    0
+   ],
+   "steps": 14
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "c4_back"
+  },
+  {
+   "eval": "JSON.stringify({inCar:G.city.inCar, v:G.city.car?+(G.city.car.speed*3.6).toFixed(0):null, pos:G.city.car?[+G.city.car.pos.x.toFixed(1),+G.city.car.pos.z.toFixed(1)]:null, dmg:G.city.car&&+G.city.car.damage.toFixed(2), sd:G.city.car&&G.city.car.smashD&&G.city.car.smashD.state, s:G.stage.smash&&G.stage.smash.stats, ev:G.stage.smash&&G.stage.smash.events.slice(-6).map(e=>e.kind+':'+e.what), txt:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ')})"
+  }
+ ]
+}
