@@ -1,5 +1,5 @@
 {
- "about": "[O1c] The street answers a fist (docs/briefs/O1C_STREETS.md section 2), a walk down Grand Ave by real input: for every kind of thing in the street, set up a step off it facing it (a tool's teleport between walks), W for a quarter second at it, then LMB - a jab - (twice: the second blow within 2.5 s). Each must answer as its kind: what gives goes over (a bin, a board, a bicycle, flowers, a barrel, churns; a crate shoved whole; drums, barrels, a bench, a handcart by the second blow), what does not shakes (a bench, drums, a stall, a newsstand to one jab), iron rings and the hand hurts (a mailbox, a hydrant, a lamp post, a call box, a sign, a booth), shop glass cracks and then goes, a wall hurts the hand, a door is knocked on, a car's tin dents (the damage record's dents), the body rocks and it is a crime, a bottle on a step is knocked off and breaks; a thing knocked over is a crime ('vandal') - one a cop sees raises the heat. 3.5 s after each (7 s for what rolls), nothing floating, everything resting, and seen where it lies (from 3 m, 15 % of its box or more brighter for it than without it). node tools/play.mjs tools/plays/o1c_fist.json",
+ "about": "[O1c] The street answers a fist (docs/briefs/O1C_STREETS.md section 2), a walk down Grand Ave by real input: for every kind of thing in the street, set up a step off it facing it (a tool's teleport between walks), W for a quarter second at it, then LMB - a jab - (twice: the second blow within 2.5 s). Each must answer as its kind: what gives goes over (a bin, a board, a bicycle, flowers, a barrel, churns; a crate shoved whole; drums, barrels, a bench, a handcart by the second blow), what does not shakes (a bench, drums, a stall, a newsstand to one jab), iron rings and the hand hurts (a mailbox, a hydrant, a lamp post, a call box, a sign, a booth), shop glass cracks and then goes, a wall hurts the hand, a door is knocked on, a car's tin dents (the damage record's dents), the body rocks and it is a crime, a bottle on a step is knocked off and breaks; a thing knocked over is a crime ('vandal') - one a cop sees raises the heat. 3.5 s after each (7 s for what rolls), nothing floating, everything resting, and seen where it lies (from 3 m, 15 % of its box or more changed by 20 levels by it, against the frame without it); the bin a cop saw: HEAT 1 within 1.5 s. node tools/play.mjs tools/plays/o1c_fist.json",
  "url": "/?mute=1&start=city",
  "size": [1280, 800],
  "out": "shots/o1c/fist",
@@ -38,9 +38,8 @@
     { "name": "a street door", "find": "__face('door')", "expect": "door" },
     { "name": "a parked car (the coupe: no traffic before O2)", "find": "__car()", "expect": "car", "crime": "vandal" },
     { "name": "a bottle on a step", "find": "__bottle()", "expect": "item", "pitch": -0.45 },
-    { "name": "a bin a cop can see", "find": "__seen('bin') || __seen('bins') || __seen('board')", "expect": "over", "crime": "vandal@" }
+    { "name": "a bin a cop can see", "find": "__seen('bin') || __seen('bins') || __seen('board')", "expect": "over", "crime": "vandal@cop", "heat": 1, "settle": 1500 }
    ], "check": "D.bad.length === 0", "label": "the fist walk: every kind answers as its kind, nothing floating, everything resting" },
-  { "expect": "G.police && G.police.heat >= 1", "label": "the bin knocked over where a cop saw it: HEAT 1" },
   { "shot": "f_end" }
  ]
 }

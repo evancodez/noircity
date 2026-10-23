@@ -155,6 +155,9 @@ function answer(G, R, T, dir, heavy, S) {
         if (ctl.kick) ctl.kick(0.9, 0.4, 0.08);
       }
     } else if (res) {
+      // ([O1c] after the critic: a can, a churn, a barrel struck high topples - the push is above
+      // its middle - instead of hopping and landing on its foot again)
+      if (res === 'over' && it.K.round && it.body && it.body.w) it.body.w.add(new THREE.Vector3(dir.z, 0, -dir.x).multiplyScalar(heavy ? 6 : 4.5));
       if (ctl.kick) ctl.kick(1.2, 0.8, 0.1);
       if (!O3S.has(kind) && G.crime) G.crime.emit('vandal', { x: it.x, z: it.z }, 'player');
     }

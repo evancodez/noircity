@@ -77,8 +77,8 @@ const HELPERS = `(() => {
   window.__seen = (kind) => { const P = G.police, g = G.stage.part('city').graph; if (!P) return null; for (const c of P.cops) { if (!c.standing) continue; const L = S.near(c.pos.x, c.pos.z, 22).filter((it) => it.kind === kind && it.state === 'stand' && Math.hypot(it.x - c.pos.x, it.z - c.pos.z) > 6 && g.lineOfSight(c.pos.x, c.pos.z, it.x, it.z)); if (L.length) return { x: L[0].x, z: L[0].z, it: L[0], cop: c.pos.clone() }; } return null; };
   // ([O1c] after the critic, B2) is a thing lying seen? From 3 m, facing it, looking down at it:
   // two frames of the canvas, with it drawn and with its instance taken out, inside its
-  // drawn box: the share of pixels it makes brighter by 20 levels or more (ink on ink: none),
-  // and the mean change. (A rAF set after the game's own runs after its render: the canvas
+  // drawn box: the share of pixels it changes by 20 levels or more (ink on ink: next to none),
+  // the share it makes brighter, and the mean change. (A rAF set after the game's own runs after its render: the canvas
   // still holds the frame.)
   window.__grab = () => new Promise((res) => requestAnimationFrame(() => { const c = document.querySelector('canvas'), w = c.width, h = c.height, x = document.createElement('canvas'); x.width = w; x.height = h; const g = x.getContext('2d', { willReadFrequently: true }); g.drawImage(c, 0, 0); res({ g, w, h }); }));
   window.__seeLying = async (it) => {
@@ -98,9 +98,9 @@ const HELPERS = `(() => {
     const B = await window.__grab();
     P.im.setMatrixAt(it.inst, m); P.im.instanceMatrix.needsUpdate = true;
     const a = A.g.getImageData(x0, y0, x1 - x0, y1 - y0).data, q = B.g.getImageData(x0, y0, x1 - x0, y1 - y0).data;
-    let n = 0, up = 0, sum = 0;
-    for (let i = 0; i < a.length; i += 4) { const la = (a[i] + a[i + 1] + a[i + 2]) / 3, lb = (q[i] + q[i + 1] + q[i + 2]) / 3; n++; sum += la - lb; if (la - lb >= 20) up++; }
-    return { frac: +(up / n).toFixed(3), d: +(sum / n).toFixed(1), box: n };
+    let n = 0, up = 0, any = 0, sum = 0;
+    for (let i = 0; i < a.length; i += 4) { const la = (a[i] + a[i + 1] + a[i + 2]) / 3, lb = (q[i] + q[i + 1] + q[i + 2]) / 3; n++; sum += la - lb; if (la - lb >= 20) up++; if (Math.abs(la - lb) >= 20) any++; }
+    return { frac: +(any / n).toFixed(3), up: +(up / n).toFixed(3), d: +(sum / n).toFixed(1), box: n };
   };
   window.__fistLog = [];
   // (the press's latency: the page's own mousedown to the swing's frame - performance.now both)
@@ -146,6 +146,7 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
       const pane = t.w && t.w.it && t.w.it.pane ? t.w.it.pane.state : null;
       const item = t.item ? { taken: t.item.taken, x: +t.item.x.toFixed(2), z: +t.item.z.toFixed(2) } : null;
       return { state: it ? it.state : null, gone: it ? !!it.gone : null, rest: it && it.state !== 'stand' && !it.gone ? window.__rest(it) : null, ev, fl, cr, pane, item,
+        heat: G.police ? G.police.heat : null,
         tilt: it && it.Q && it.state !== 'stand' ? Math.round(Math.acos(Math.min(1, new N.THREE.Vector3(0, 1, 0).applyQuaternion(it.Q).y)) * 57.3) : null,
         dents: t.car ? window.__dents(t.car) - window.__dent0 : null, rock: t.car ? +window.__rock.toFixed(3) : null,
         hands: G.player.hands.set, clip: G.player.hands.clip ? G.player.hands.clip.name : null }; })()`);
@@ -166,9 +167,10 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
     else if (e === 'item') ok = /item:bottle:broken/.test(fl) && r.item && r.item.taken;
     else ok = true;
     if (T.crime) ok = ok && r.cr.some((c) => c.startsWith(T.crime));
+    if (T.heat != null) ok = ok && r.heat >= T.heat;
     const rec = { name: T.name, kind: tg.kind, ok, lat, ...r };
     out.push(rec);
-    log(`  ${T.name} (${tg.kind} at ${tg.x}, ${tg.z}): ${e} ${ok ? 'ok' : 'NOT OK'} - set: [${ev}] fist: [${fl}] ${r.state ? 'now ' + r.state : ''}${r.rest != null ? ` lowest ${r.rest} m over the ground, tilted ${r.tilt} deg` : ''}${r.seen ? ` seen from 3 m: ${(r.seen.frac * 100).toFixed(0)} % of its box brighter, mean +${r.seen.d}` : ''}${r.dents != null ? ` dents +${r.dents}, rock ${r.rock} rad` : ''}${r.pane ? ' pane ' + r.pane : ''}${r.cr.length ? ' crimes: ' + r.cr.join(',') : ''} (press to act ${lat} ms)`);
+    log(`  ${T.name} (${tg.kind} at ${tg.x}, ${tg.z}): ${e} ${ok ? 'ok' : 'NOT OK'} - set: [${ev}] fist: [${fl}] ${r.state ? 'now ' + r.state : ''}${r.rest != null ? ` lowest ${r.rest} m over the ground, tilted ${r.tilt} deg` : ''}${r.seen ? ` seen from 3 m: ${(r.seen.frac * 100).toFixed(0)} % of its box changed by it (${(r.seen.up * 100).toFixed(0)} % brighter), mean ${r.seen.d}` : ''}${r.dents != null ? ` dents +${r.dents}, rock ${r.rock} rad` : ''}${r.pane ? ' pane ' + r.pane : ''}${r.cr.length ? ' crimes: ' + r.cr.join(',') : ''}${T.heat != null ? ' heat ' + r.heat : ''} (press to act ${lat} ms)`);
     if (T.shot && opts.shotEach) await sleep(10);
   }
   return { hits: out, bad: out.filter((h) => !h.ok).map((h) => h.name), lat: out.map((h) => h.lat).filter((x) => x != null) };
