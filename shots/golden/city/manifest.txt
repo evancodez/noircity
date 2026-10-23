@@ -1,10 +1,10 @@
 city_elcorner|scene=city&beat=roam&t=2&pose=-80,160,1.326,0.12
 city_grand_car|scene=city&beat=roam&t=2&car=-112.2,40,1.5708
-city_broadway|scene=city&beat=roam&t=2&pose=-75,15,-0.785,0.08
+city_broadway|scene=city&beat=roam&t=2&pose=-150,90,-0.72,0.3
 city_station|scene=city&beat=roam&t=2&pose=158,20,0,0.15
 city_tenements|scene=city&beat=roam&t=2&pose=268,50,0,0.1
 city_quay|scene=city&beat=roam&t=2&at=docks&pose=100,446,1.5708,0.06
 city_gasworks|scene=city&beat=roam&t=2&at=gasworks&pose=-290,-120,0.9,0.2
 city_park|scene=city&beat=roam&t=2&at=park&pose=-120,-428,0.3,0.05
 city_straight|scene=city&beat=roam&t=2&at=yards&pose=-446,380,0,0.04
-city_clock|scene=city&beat=roam&t=2&at=clock&pose=-25,-112,-2.356,0.14
+city_clock|scene=city&beat=roam&t=2&at=clock&pose=-28,-118,-2.32,0.95

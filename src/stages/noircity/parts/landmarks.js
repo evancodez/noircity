@@ -53,6 +53,17 @@ export default {
       for (const s of [-1, 1]) for (const t of [-1, 1]) parts.push(box(x + s * (W / 2 - 0.7) - 0.7, x + s * (W / 2 - 0.7) + 0.7, 0, h * 0.68, z + t * (W / 2) - 0.7, z + t * (W / 2) + 0.7));
       for (const y of [h * 0.18, h * 0.36, h * 0.54]) parts.push(box(x - W / 2 - 0.3, x + W / 2 + 0.3, y, y + 0.7, z - W / 2 - 0.3, z + W / 2 + 0.3));
       add(parts, stoneT, { shadow: false });
+      // the shaft's windows, a few lit (the far build's level): it reads as a
+      // tower in the haze, not a slab
+      const wr = stage.rng.fork(4101), wins = [];
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2, nx = Math.sin(a), nz = Math.cos(a), tx = nz, tz = -nx;
+        for (let y = 12; y < h * 0.66; y += 7.5) for (const u of [-W * 0.2, W * 0.2]) {
+          if (!wr.chance(0.24)) continue;
+          wins.push(new THREE.PlaneGeometry(1.0, 2.2).rotateY(a).translate(x + nx * (W / 2 + 0.04) + tx * u, y, z + nz * (W / 2 + 0.04) + tz * u));
+        }
+      }
+      add(wins, new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.62) }), { ray: false });
       // the faces: a lit disc on each side (unfogged: they are the city's
       // compass, seen through the fog from the far districts), its hands dark over it
       const faceY = h * 0.75, R = W * 0.33, faces = [], hands = [];

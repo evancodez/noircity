@@ -19,7 +19,7 @@
   { "eval": "({ me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], car: [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)], prompt: G.hud.promptShown })" },
   { "eval": "(() => { const c = G.city.car, C = N.controller; C.setPose(C.pos.x, C.pos.z, Math.atan2(-(c.pos.x - C.pos.x), -(c.pos.z - C.pos.z)), -0.1); return 1; })()" },
   { "walk": "(() => { const c = G.city.car; return [[c.pos.x + (N.controller.pos.x - c.pos.x) * 0.35, c.pos.z + (N.controller.pos.z - c.pos.z) * 0.35]]; })()", "timeout": 6000 },
-  { "until": "G.hud.promptShown === 'E  get in'", "timeout": 3000 },
+  { "until": "G.hud.promptShown === 'E  get in' || (G.hud.kit.teachCur && G.hud.kit.teachCur.id === 'city_in' && !G.hud.promptShown)", "label": "one card at the car: the teach card the first time in this save, the prompt after", "timeout": 3000 },
   { "key": "KeyE", "hold": 80 },
   { "until": "G.city.inCar", "timeout": 3000 },
   { "wait": 900 },
