@@ -53,6 +53,8 @@ export default {
     // ---- the house: dark, the rows of seats, the screen at the far end
     const Hh = 7.2;
     K.room(x0, x1, z0, zl - 0.24, { h: Hh, floor: 'boards', wall: 'dark', ceil: 'dark', look: { ambient: 0.25, haze: 0.6, room: 'o5_house' }, sides: { s: false } });
+    // (the house's back wall over the lobby's ceiling: open, the street's buildings showed over it from the seats)
+    K.wall('x', zl - 0.12, x0 - 0.24, x1 + 0.24, FLOOR + H - 0.05, FLOOR + Hh, { key: 'dark', solid: false });
     const sw = Math.min(x1 - x0 - 2.0, 9.0), scx = (x0 + x1) / 2;
     K.box('screen', scx - sw / 2, scx + sw / 2, FLOOR + 1.6, FLOOR + 1.6 + sw * 0.6, z0 + 0.05, z0 + 0.08, 2);
     K.box('cloth', scx - sw / 2 - 0.6, scx - sw / 2, FLOOR, FLOOR + 6.5, z0, z0 + 0.3, 1);

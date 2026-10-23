@@ -137,18 +137,27 @@
    "wait": 600
   },
   {
-   "name": "my fight",
-   "expect": "G.brawl.active"
+   "name": "my fight: both of them turn on me (O4's crowd brawl)",
+   "expect": "G.crowd.active && G.crowd.men.length === 2"
   },
   {
-   "drive": "tools/plays/critic/c4_bot.mjs",
+   "drive": "tools/lib/o4_brawl.mjs",
    "profile": "good",
-   "timeout": 200000,
-   "shots": 0
+   "beat": "roam",
+   "tries": 1,
+   "wins": 1,
+   "timeout": 240000,
+   "things": true,
+   "check": "D.wins >= 1",
+   "label": "good hands win the bar's fight (1v2)"
   },
   {
-   "until": "N.controller.mode === 'walk'",
+   "until": "!G.crowd.active && N.controller.mode === 'walk'",
    "timeout": 20000
+  },
+  {
+   "name": "on my feet after it",
+   "expect": "N.controller.mode === 'walk'"
   }
  ]
 }

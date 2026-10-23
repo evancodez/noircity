@@ -76,11 +76,19 @@
    "shot": "01_reel"
   },
   {
+   "name": "the reel's footer is not drawn (keys as words)",
+   "expect": "getComputedStyle(G.stills.hint).visibility === 'hidden'"
+  },
+  {
    "until": "!G.stills.active",
    "timeout": 20000
   },
   {
    "wait": 800
+  },
+  {
+   "name": "seated: one 'get up' line (the prompt), no card saying it too",
+   "expect": "G.hud.promptShown === 'E  get up' && !(G.hud.kit.teachCur && /get up/i.test(G.hud.kit.teachCur.text))"
   },
   {
    "key": "KeyE",
@@ -92,6 +100,16 @@
   {
    "name": "up from the seat",
    "expect": "!G.city.places.seat"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "name": "up, I face the doors out (not the side wall)",
+   "expect": "(()=>{const s=G.city.places.byId.get('theatre1'),D=s.live.K.doors.find(d=>!d.street);const dx=D.centre.x-G.eye.x,dz=D.centre.z-G.eye.z;const w=Math.atan2(-dx,-dz);return Math.abs(Math.atan2(Math.sin(w-N.controller.yaw),Math.cos(w-N.controller.yaw)))<0.6})()"
+  },
+  {
+   "shot": "02_up"
   }
  ]
 }

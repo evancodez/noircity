@@ -582,7 +582,8 @@ export class Places {
 }
 
 // (a gun in hand: LMB is its)
-function drawn(G) { const c = G.player.weapons.current; return !!c && c !== 'fists'; }
+function drawn(G) { const c = G.player.weapons.current, h = G.player.hands.set; return !!c && c !== 'fists' && !!h && h !== 'empty' && h !== 'fists'; }
+// (the city's hands are empty with the base's Tommy gun still 'current' underneath: that is nothing drawn)
 // (a seat with a use of its own in front of it: the bar's whiskey, the counter's coffee)
 function K_USES(s, S) { return !!(s.live && s.live.K.uses.some((U) => U.seated === S)); }
 

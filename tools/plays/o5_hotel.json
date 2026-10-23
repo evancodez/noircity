@@ -130,6 +130,13 @@
    "shot": "02_black"
   },
   {
+   "wait": 1600
+  },
+  {
+   "name": "no prompt under the sleep's black",
+   "expect": "!G.city.places.sleeping || !G.hud.promptShown"
+  },
+  {
    "until": "!G.city.places.sleeping",
    "timeout": 15000
   },

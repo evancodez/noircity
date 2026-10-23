@@ -1,4 +1,5 @@
 import { FLOOR } from '../../city/kits/interior/kit.js';
+import { wake as fallWake } from '../../combat/fall.js';
 import { counter, bench, bars, label, sheet, shelves, desk, chair } from '../../city/kits/interior/pieces.js';
 import { RNG } from '../../util/rng.js';
 
@@ -65,6 +66,8 @@ export default {
     if (S) P.sit(s, S);
     const D = K.cells[1].door; D.open(null, 9);
     P.arrested = true;
-    G.hud.message('Headquarters. The cell door is open.', 2.6);
+    // (O4's rules of the station: the guns kept by the police, a fine of a fifth)
+    const r = fallWake(G, 'station');
+    G.hud.message(r.line + ' The cell door is open.', 3.0);
   },
 };
