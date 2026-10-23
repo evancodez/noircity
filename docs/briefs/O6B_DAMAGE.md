@@ -102,3 +102,10 @@ your fix pass: tune the wear so that the drive-through's bot finishes its
 loop under `smoke` every time (the scrapes showing on the body as yours do),
 and name in your report what a car can take before it smokes, burns and
 goes: how many hard crashes at what speed, how many rounds.
+
+## From lane O5's merge (2026-10-23, main 407278b): yours
+O5's rooms are built from merged furniture (`src/city/kits/interior/`):
+nothing in them breaks. Yours if the hours allow, else named in left: the
+bar's bottles and glasses, a stool, a table, the diner's cups, the gym's
+bag as your set's kinds (a shot into the back bar is the noir thing), capped
+per room; what does not break says so (a round into a wall is a chip).

@@ -143,3 +143,10 @@ your fix pass (or your build if you read this first): `src/world/Cars.js`
 any range. A **one-draw far build** beyond about 36 m, with `lodUpdate`
 called every tick (30 cars from about 400 draws to under 90), and the
 variants' extra parts inside that budget.
+
+## From lane O5's merge (2026-10-23, main 407278b): yours
+O5's garage (`src/places/rooms/garage.js`): the mechanic fixes ($15) or
+repaints ($10) the car parked outside, but the garage stores no car. Yours:
+a car left at the garage is kept (one bay: the save holds it, the sheet goes
+over it), taken again from the mechanic; and the repaint through your
+variants (a new colour and plate, the heat off it: the reason to repaint).
