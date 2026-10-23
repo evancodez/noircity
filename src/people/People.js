@@ -10,7 +10,7 @@ import { COSTUMES } from '../cast/costumes.js';
 import { castBank } from '../cast/castAnim.js';
 import { LOOKS, PED_LOOKS, COP_LOOKS, TEC_LOOKS, GANG_LOOKS, hash, pickWeighted } from './costumes.js';
 import { wake } from '../combat/fall.js';
-import { owns } from '../combat/money.js';
+
 
 // [O3] The city's people (lane O3, NOIR CITY): the crowd on the pavements,
 // the witnesses, and the systems that live on them - the police (src/police/)
@@ -187,14 +187,14 @@ export class People {
     for (const p of [...this.list]) this.release(p);
     this._later = [];
     this.spawnT = 1.2;
-    // (lane O4's rules of the fall, src/combat/fall.js: the station keeps the guns
-    // and fines a fifth, $10 at least; the hospital keeps nothing but a tenth)
+    // (lane O4's rules of the fall, src/combat/fall.js: the station fines a fifth, $10 at
+    // least, and keeps no gun [the user's rule]; the hospital a tenth)
     if (why === 'arrest' && room) { /* (lane O5's cell: its wake took the fine and the guns and says its line) */ }
     else if (why === 'arrest') {
-      const had = ['revolver', 'shotgun', 'tommy'].some((g) => owns(G, g));
+      // [manager, the user's rule: the arrest keeps every gun I carry (fall.js); the line says so no more]
       const { cost } = wake(G, 'station');
       if (G.player.weapons.current) G.player.weapons.equip(null);
-      G.hud.say(`Released.${cost ? ` Fined $${cost}.` : ''}${had ? ' They kept the gun.' : ''}`, 3.4, { always: true });
+      G.hud.say(`Released.${cost ? ` Fined $${cost}.` : ''}`, 3.4, { always: true });
     } else if (why === 'hospital') {
       const { cost } = wake(G, 'hospital');
       G.hud.say(cost ? `Patched up. $${cost} for the stitches.` : 'Patched up. On your feet.', 2.8, { always: true });

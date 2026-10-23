@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Pilot } from '../vehicles/pilot.js';
+import { CAR_SPECS } from '../vehicles/Car.js';   // [O2]
 import { samplePath } from '../stages/city/route.js';
 import { accentMaterial } from '../render/accents.js';
 
@@ -24,7 +25,13 @@ let LAMP_MAT = null, LAMP_GEO = null;
 // the one place a police car is made (O2 replaces it with its own)
 export function makeCar(police, { x, z, yaw, kind = 'sedan' }) {
   const G = police.G;
-  const v = G.vehicles.spawn(kind, { at: { x, z }, yaw, lights: true });
+  // [O2] the city's police car (vehicles/kinds.js 'police': its variants, its lamps, solid to
+  // rounds; a man at the wheel), and the riot squad's a lorry of the fleet - the wheels' models
+  const W = G.wheels && G.wheels.stage === G.stage ? G.wheels : null;
+  const fk = kind === 'truck' ? 'lorry' : 'police';
+  const v = W ? W.carAt(x, z, fk, { yaw, lights: true }) : G.vehicles.spawn(kind, { at: { x, z }, yaw, lights: true });
+  // (at the base sedan's pace and pull: O3's chases, its box and its roadblock were tuned on it)
+  if (W) { W.ownLamps(v); if (v.model.meshes.bust) v.model.meshes.bust.visible = true; if (kind === 'sedan') Object.assign(v.spec, { vmax: CAR_SPECS.sedan.vmax, accel: CAR_SPECS.sedan.accel }); }
   v.police = true;
   // the red lamp on the roof: a small lit dome, the registry's red
   if (!LAMP_MAT) { LAMP_MAT = accentMaterial('blood', { gain: 3.2 }); LAMP_GEO = new THREE.SphereGeometry(0.15, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.3, 1); }
@@ -113,14 +120,14 @@ export class PatrolCar {
   }
   get pos() { return this.v.pos; }
 
-  // drive to a point (rebuilt as it moves)
+  // drive to a point (rebuilt as it moves) - [O2] its pilot sees the parked cars too (wheels.bodiesFor)
   driveTo(p, { vmax = 19, pace = 1 } = {}) {
     this.target = { x: p.x, z: p.z };
     const path = lanePath(this.graph, this.v.pos, this.target, { vmax });
     if (!path) return false;
     const V = this.G.vehicles;
     if (!this.pilot) {
-      this.pilot = new Pilot(path, { pace, vmax, keep: 5, bodies: () => V.list.filter((o) => o !== this.v), overtake: true });
+      this.pilot = new Pilot(path, { pace, vmax, keep: 5, bodies: () => (this.G.wheels ? this.G.wheels.bodiesFor(this.v) : V.list.filter((o) => o !== this.v)), overtake: true });
       this.v.driver = this.pilot;
     } else { this.pilot.setPath(path, this.v); this.pilot.o.vmax = vmax; this.pilot.o.pace = pace; }
     this.routeT = 0;
@@ -132,7 +139,7 @@ export class PatrolCar {
     // (a bend: on along its nose a few metres, then to the point)
     const path = samplePath([[v.pos.x, v.pos.z], [v.pos.x + fx * 3, v.pos.z + fz * 3], [p.x, p.z]], { vmax, aLat: 5, aBrake: 5 });
     const V = this.G.vehicles;
-    if (!this.pilot) { this.pilot = new Pilot(path, { pace: 1, vmax, keep: 2, bodies: () => V.list.filter((o) => o !== this.v) }); }
+    if (!this.pilot) { this.pilot = new Pilot(path, { pace: 1, vmax, keep: 2, bodies: () => (this.G.wheels ? this.G.wheels.bodiesFor(this.v) : V.list.filter((o) => o !== this.v)) }); }
     else { this.pilot.setPath(path, this.v); this.pilot.o.vmax = vmax; }
     this.v.driver = this.pilot;
     this.routeT = 0;

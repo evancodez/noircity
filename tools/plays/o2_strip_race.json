@@ -1,0 +1,13 @@
+{
+ "about": "[O2] The race's start, frame by frame (brief O2 §5): E at the line, the black, the grid, the flag up, the card, the flag down, the first metres. node tools/play.mjs tools/plays/o2_strip_race.json",
+ "url": "/?mute=1&start=city&car=-448,262,1.5708",
+ "size": [960, 600],
+ "out": "shots/o2/strips/race",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 20000 },
+  { "wait": 1500 },
+  { "drive": "tools/lib/o2_wheels.mjs", "mode": "race", "hands": "good", "strip": 8 }
+ ]
+}

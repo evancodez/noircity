@@ -1,0 +1,57 @@
+{
+ "about": "[O2 critic] in a taxi: V (the third-person must from main), then a fare hails: drive straight at him - does the car go through a man?",
+ "url": "/?mute=1&start=city&ckind=taxi",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2critic/runover",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "({ inCar: G.city.inCar, kind: G.city.car && G.city.car.kind })"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "key": "KeyV",
+   "hold": 80
+  },
+  {
+   "wait": 700
+  },
+  {
+   "shot": "v_pressed"
+  },
+  {
+   "drive": "tools/plays/critic/o2/cold.mjs",
+   "mode": "runover"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "shot": "after"
+  }
+ ]
+}

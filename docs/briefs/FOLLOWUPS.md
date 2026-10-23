@@ -5,12 +5,12 @@ Each becomes a short lane at `high` when a slot frees (the cap is four),
 in this order unless the user's words move one up. Lane O9 (alive) is
 the next launch after O2 and O8 merge, ahead of all of these.
 
-1. **O2b, wheels** (after O2's merge; only what O2 left short): the
-   third-person view in the car (V, R3: the must of 2026-10-23) if O2's
-   fix pass missed it; the car variants by a seeded hash; the coupe's
-   speed; the cabin's share of the frame; the far-car draws; the tight
-   hull for rounds and the seat views if O2's fix pass missed them (else
-   O9's).
+1. **O2b, wheels** (`docs/briefs/O2B_WHEELS.md`; O2 merged at 634c47e with
+   the view behind the car, the variants and a seat for every kind): the
+   tight hull for rounds, each kind's cabin drawn as the coupe's (the police
+   car's box, the lorry's missing frame), the top speeds, the far build, the
+   fare bot, the race, hands in the hijack, the traffic parking, the kept
+   car's sheet, V on the title's keys line.
 2. **O6c, the fire's warning**: on main after O6b, a chase at heat 3 into
    the roadblock burns the car after two crashes with no warning
    (`o3_roadblock.json`: `warnedFor` null, 'She went up with you in

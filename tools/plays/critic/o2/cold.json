@@ -1,0 +1,26 @@
+{
+ "about": "[O2 critic] cold: the title, BEGIN, what the screen says, hands off 12 s, then a first walk and look round for a car",
+ "url": "/?mute=1",
+ "size": [1440, 900],
+ "out": "shots/o2critic/cold",
+ "steps": [
+  { "until": "G.state === 'title'", "timeout": 30000 },
+  { "wait": 1500 },
+  { "shot": "a0_title" },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1500 },
+  { "eval": "({ obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: document.querySelector('#hud .teach') && document.querySelector('#hud .teach').textContent, pos: [N.controller.pos.x|0, N.controller.pos.z|0], inCar: !!(G.city&&G.city.inCar), car: G.city && G.city.car ? G.city.car.kind : null })" },
+  { "shot": "a1_begin" },
+  { "wait": 12000 },
+  { "eval": "({ obj: G.hud.objectiveText, prompt: G.hud.promptShown, teach: document.querySelector('#hud .teach') && document.querySelector('#hud .teach').textContent, hudText: document.querySelector('#hud') && document.querySelector('#hud').innerText.slice(0,300) })" },
+  { "shot": "a2_idle12" },
+  { "look": [600, 0], "steps": 12 },
+  { "wait": 400 },
+  { "shot": "a3_look_right" },
+  { "look": [-1200, 0], "steps": 12 },
+  { "wait": 400 },
+  { "shot": "a4_look_left" },
+  { "eval": "({ prompt: G.hud.promptShown })" }
+ ]
+}

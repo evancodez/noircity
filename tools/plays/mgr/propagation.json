@@ -1,0 +1,17 @@
+{
+ "about": "[manager] the propagation and variety test (the user's rules, O9_ALIVE.md 1b and 1c; OPEN_WORLD.md): one shot on the quay at night with nobody near raises no heat and draws nobody; the same shot at the GRAND - CENTRE stop draws the stop's people, two reports and a patrol car; a man two blocks away never flinches; of the dozen reacting no two do the same thing the same way. Run at every merge check; the counts reported. NOIR_PORT=5370 node tools/play.mjs tools/plays/mgr/propagation.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/mgr/prop",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1000 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true, city_gun: true, o3_punch: true }, 1)" },
+  { "drive": "tools/lib/mgr_prop.mjs", "site": "quay", "secs": 40, "empty": true, "check": "D.shotLogged && D.heatMax === 0 && D.reactors.near60 <= D.near45 + 2 && D.reactors.far120 === 0 && (!D.farMan || !D.farMan.flinched) && D.police.carMinD > 60 && (D.near45 > 0 || D.reports.max === 0)", "label": "a shot on the quay with nobody near: no heat, nobody drawn but those who were there, nobody far away flinching, no patrol car" },
+  { "shot": "quay" },
+  { "drive": "tools/lib/mgr_prop.mjs", "site": "grand", "secs": 60, "check": "D.shotLogged && D.reactors.near45 >= 3 && D.reports.max >= 2 && D.police.carMinD < 40 && D.reactors.far120 === 0 && (!D.farMan || !D.farMan.flinched) && D.variety.at3 && D.variety.at3.sameWay === 0", "label": "the same shot at the Grand stop: the stop's people react, two reports, a patrol car; nobody two blocks away flinches; no two react the same way" },
+  { "shot": "grand" }
+ ]
+}

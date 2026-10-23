@@ -38,6 +38,9 @@ export default {
   mouse(ctl, e) {
     const D = ctl.drive;
     if (!D || ctl.lookLocked) return true;
+    // [O2] the view behind the car (vehicles/chase.js): the look swings it round the car
+    const O = ctl.modeOpts;
+    if (O && O.lookAround && O.lookAround(e, ctl)) { D.idle = 0; return true; }
     const R = D.aim ? AIM : LOOK;
     D.look.yaw = clamp(D.look.yaw - e.movementX * ctl.sensitivity, R.yaw[0], R.yaw[1]);
     D.look.pitch = clamp(D.look.pitch - e.movementY * ctl.sensitivity, R.pitch[0], R.pitch[1]);
@@ -118,5 +121,7 @@ export default {
     const want = D.focus ? D.base - (D.focusFov ?? 14) : D.base + 9 * clamp((v.speed - 8) / 20, 0, 1);
     D.fov += (want - D.fov) * (dt > 0 ? 1 - Math.exp(-dt * (D.focus ? 2.2 : 2.5)) : 0);
     if (!ctl._kick && Math.abs(ctl.camera.fov - D.fov) > 0.01) { ctl.camera.fov = D.fov; ctl.camera.updateProjectionMatrix(); }
+    // [O2] a view of the scene's over the seat's (the city's: behind the car - vehicles/chase.js)
+    if (O.view) O.view(ctl, D, v, dt);
   },
 };

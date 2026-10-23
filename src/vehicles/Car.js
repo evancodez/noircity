@@ -520,6 +520,11 @@ export class Car {
     this.pinT = stuck ? (this.pinT || 0) + dt : Math.max(0, (this.pinT || 0) - dt * 2);
     if (this.pinT < 0.35) return;
     const st = clamp(this.input.steer, -1, 1);
+    // [O2] after the critic (M2: W held into a parked car with no steer, the player's car turned
+    // 90 degrees on the spot by itself, a random way - into a shop front): the player's car turns
+    // only the way his hands ask (A / D); left alone it stays against what it met and S backs it
+    // off. The city's drivers keep the scrabble round (their pilots ask again from where it leaves them)
+    if (this.driver === 'player' || (this.vehicles && this.vehicles.player === this)) { if (Math.abs(st) > 0.05) this.yaw += st * 1.2 * dt; return; }
     this.yaw += (st || (this._pinDir ??= Math.random() < 0.5 ? -1 : 1)) * 1.2 * dt;
     if (!st) this._pinDir = this._pinDir || 1;
   }

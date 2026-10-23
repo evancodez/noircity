@@ -34,6 +34,14 @@ if (process.env.MOMENTS === 'city') MOMENTS.splice(0, MOMENTS.length,
   ['city: the Bowery under the station', 'scene=city&beat=roam&t=3&anim=1&pose=158,20,0,0.15'],
   ['city: the quay, the river\'s lights', 'scene=city&beat=roam&t=3&anim=1&at=docks&pose=100,446,1.5708,0.06'],
 );
+// [O2] the wheels' busiest moments (MOMENTS=wheels): the traffic at its cap at the busiest
+// junction and down Grand Ave from the car, and the race running (its bed: &racego=1)
+if (process.env.MOMENTS === 'wheels') MOMENTS.splice(0, MOMENTS.length,
+  ['wheels: Grand Ave from the car, the traffic at its cap', 'scene=city&beat=roam&t=45&anim=1&traffic=1&car=-112.2,40,1.5708'],
+  ['wheels: Grand Ave at Centre St, the signals, the tram', 'scene=city&beat=roam&t=45&anim=1&traffic=1&pose=-108,-14,0.75,0.04'],
+  ['wheels: the race, the Yards\' corner', 'scene=city&beat=roam&t=14&anim=1&traffic=1&car=-448,236,1.5708&racego=1'],
+  ['wheels: Grand Ave, the view behind the car (V), the traffic at its cap', 'scene=city&beat=roam&t=45&anim=1&traffic=1&car=-112.2,40,1.5708&carview=third'],
+);
 
 function gpuUtil() {
   try { const o = execSync('ioreg -r -d 1 -w 0 -c IOAccelerator', { encoding: 'utf8' }); const m = [...o.matchAll(/"Device Utilization %"=(\d+)/g)].map((x) => +x[1]); return m.length ? Math.max(...m) : null; } catch { return null; }

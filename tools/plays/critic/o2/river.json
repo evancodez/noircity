@@ -1,0 +1,133 @@
+{
+ "about": "[O2 critic] the river road: off the quay into the water by car - what happens, what is said",
+ "url": "/?mute=1&start=city&at=river",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2critic/river",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1300
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "down": "KeyA"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "up": "KeyA"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "shot": "r3"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "shot": "r6"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "shot": "r9"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "({ v: G.city.car ? G.city.car.speed.toFixed(1) : null, p: G.city.car ? [G.city.car.pos.x.toFixed(1), G.city.car.pos.z.toFixed(1)] : null, inCar: G.city.inCar, wet: G.city.car ? G.stage.part('city').C.inWater(G.city.car.pos.x, G.city.car.pos.z) : null, dmg: G.city.car ? G.city.car.damage.toFixed(2) : null, msg: document.querySelector('#hud') && document.querySelector('#hud').innerText.replace(/\\n/g,' | ').slice(0,160), failing: !!G.failing, me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)] })"
+  },
+  {
+   "shot": "r_end"
+  }
+ ]
+}

@@ -1,0 +1,49 @@
+{
+ "about": "[O2] The hijack of a car with a man with a jaw at the wheel, bad hands (brief O2 \u00a73, \u00a75): slow off the mark, he has me out and the fight is fought by the play tool's first-timer (play.mjs fight); won, the car is mine; lost, he drives off and the next car comes (&again=1) and the slow hands try again. node tools/play.mjs tools/plays/o2_fighter_bad.json",
+ "url": "/?mute=1&start=city&held=1&again=1&come=saloon:fighter",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_fighter_bad",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "pull",
+   "hands": "bad"
+  },
+  {
+   "fight": {
+    "timeout": 90000,
+    "expect": "F.downs >= 0",
+    "label": "the fight, if he had me out (the play tool's first-timer)"
+   }
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "expect": "!G.brawl.active && (G.city.inCar || N.controller.mode === 'walk') && !G.failing",
+   "label": "bad: through it (the car mine, or his and me on the pavement) - never stuck"
+  },
+  {
+   "eval": "({ inCar: G.city.inCar, car: G.city.car && G.city.car.kind, stats: G.wheels.hijack.stats })"
+  }
+ ]
+}

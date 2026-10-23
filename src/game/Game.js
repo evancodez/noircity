@@ -825,6 +825,8 @@ export class Game {
     else if (!this.shotMode || this.autopilot) C.update(dt);
     else C.apply(dt);
     this.eye.copy(this.camera.position);
+    // [O2] (the view behind the car: the man is still in its seat - what sees him, shoots at him, hears him)
+    if (this.eyeFix) this.eyeFix(this.eye);
     this.camera.updateMatrixWorld();
     this.vm.update(dt, C);
     this.vm.sync(this.camera);

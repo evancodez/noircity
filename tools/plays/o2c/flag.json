@@ -1,0 +1,88 @@
+{
+ "about": "[O2 critic] on foot at the race's corner: E at the man with the flag; walk into a racer at the kerb and E at it",
+ "url": "/?mute=1&start=city&car=-448,262,1.5708",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/c_flag",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({ me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], prompt: G.hud.promptShown, race: G.wheels.race.state, cars: G.wheels.race.cars.length, flag: G.wheels.race.flag ? [G.wheels.race.flag.fig.pos.x.toFixed(1), G.wheels.race.flag.fig.pos.z.toFixed(1)] : null, teach: document.querySelector('#hud .teach') && document.querySelector('#hud .teach').innerText })"
+  },
+  {
+   "walk": [
+    [
+     -444,
+     222
+    ],
+    [
+     -443.5,
+     207.5
+    ]
+   ],
+   "timeout": 25000,
+   "stop": false
+  },
+  {
+   "look": "(() => { const f = G.wheels.race.flag.fig.pos, C = N.controller; const want = Math.atan2(-(f.x - C.pos.x), -(f.z - C.pos.z)); const e = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-e / C.sensitivity), 0]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "({ me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], prompt: G.hud.promptShown, race: G.wheels.race.state, cars: G.wheels.race.cars.length, flag: G.wheels.race.flag ? [G.wheels.race.flag.fig.pos.x.toFixed(1), G.wheels.race.flag.fig.pos.z.toFixed(1)] : null, teach: document.querySelector('#hud .teach') && document.querySelector('#hud .teach').innerText })"
+  },
+  {
+   "shot": "flagman"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "({ me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], prompt: G.hud.promptShown, race: G.wheels.race.state, cars: G.wheels.race.cars.length, flag: G.wheels.race.flag ? [G.wheels.race.flag.fig.pos.x.toFixed(1), G.wheels.race.flag.fig.pos.z.toFixed(1)] : null, teach: document.querySelector('#hud .teach') && document.querySelector('#hud .teach').innerText })"
+  },
+  {
+   "walk": "(() => { const c = G.wheels.race.cars[0].v; return [[c.pos.x, c.pos.z]]; })()",
+   "into": true,
+   "timeout": 8000
+  },
+  {
+   "eval": "({ me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], prompt: G.hud.promptShown, race: G.wheels.race.state, cars: G.wheels.race.cars.length, flag: G.wheels.race.flag ? [G.wheels.race.flag.fig.pos.x.toFixed(1), G.wheels.race.flag.fig.pos.z.toFixed(1)] : null, teach: document.querySelector('#hud .teach') && document.querySelector('#hud .teach').innerText })"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "eval": "({ ...(({ me: [N.controller.pos.x.toFixed(1), N.controller.pos.z.toFixed(1)], prompt: G.hud.promptShown, race: G.wheels.race.state, cars: G.wheels.race.cars.length, flag: G.wheels.race.flag ? [G.wheels.race.flag.fig.pos.x.toFixed(1), G.wheels.race.flag.fig.pos.z.toFixed(1)] : null, teach: document.querySelector('#hud .teach') && document.querySelector('#hud .teach').innerText })), inCar: G.city.inCar, kind: G.city.car && G.city.car.kind, racer: !!(G.city.car && G.city.car.racer) })"
+  },
+  {
+   "shot": "racer_e"
+  }
+ ]
+}

@@ -390,6 +390,16 @@ export class Police {
     if (this.block) this.stepBlock();
   }
   // a car comes on out of my sight, on the roads 110 - 170 m off
+  // [O2] a patrol car wedged for good, out of my sight: gone, and another sent
+  replaceCar(pc) {
+    const i = this.cars.indexOf(pc);
+    if (i >= 0) this.cars.splice(i, 1);
+    if (this.block && this.block.cars.includes(pc)) this.block.cars.splice(this.block.cars.indexOf(pc), 1);
+    pc.dispose();
+    this.event('replaced', { role: pc.role });
+    this.stats && (this.stats.replaced = (this.stats.replaced || 0) + 1);
+    return this.spawnCar(pc.role);
+  }
   spawnCar(role) {
     const P = this.P, G = this.G, E = G.eye, graph = P.graph;
     for (let k = 0; k < 24; k++) {
@@ -488,6 +498,10 @@ export class Police {
     pc.pull = null;
     // re-routed as I move (every 2.5 s hunting, at its end searching), or when stuck
     const done = pc.pilot && pc.pilot.done;
+    // [O2] a unit stuck for good (wedged three times running) is replaced as a man on foot is:
+    // out of my sight it goes, and another is sent from out of sight
+    if (pc.stuckT > 4) { pc.stuckN = (pc.stuckN || 0) + 1; if (pc.stuckN >= 3 && !this.P.inView(pc.pos.x, pc.pos.z) && !pc.crew.length) { this.replaceCar(pc); return; } }
+    else if (pc.routeT > 2 && Math.abs(pc.v.speed) > 3) pc.stuckN = 0;
     if (pc.routeT > (this.state === 'hunt' ? 2.5 : 9) || done || pc.stuckT > 4) { pc.stuckT = 0; this.chase(pc); }
     if (pc.mode === 'box') {
       pc.boxT += dt;
