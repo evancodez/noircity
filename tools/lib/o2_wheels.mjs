@@ -125,7 +125,7 @@ function prims({ js, turn, keyDown, keyUp, sleep, log }, H) {
           if (rounding) target = Math.min(target, 4);
           if (!rounding && ap < 4 && ap <= am && Math.abs(c.v) < 0.5) { blockT += dt; if (blockT > 2.5) { blockT = 0; roundUntil = now + 4500; passSide = -1; passUntil = now + 4500; } } else blockT = 0;
           if (ah < 30) target = Math.min(target, Math.max(0, (ah - 4) * 0.6));
-          const red = await js(`(() => { const c = G.city.car, S = G.wheels.signals, fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw), way = { dx: fx, dz: fz }; let best = 99; for (const n of S.nodes) { const dx = n.x - c.pos.x, dz = n.z - c.pos.z, ax = dx * fx + dz * fz, lz = Math.abs(dx * fz - dz * fx); if (ax > 9 && ax < 40 && lz < 9) { const st = S.state(n, way); if (st === 'stop' || (st === 'amber' && ax > 24)) best = Math.min(best, ax); } } return best; })()`);
+          const red = await js(`(() => { const c = G.city.car, S = G.wheels.signals, fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw), St = G.wheels.graph.streetAt(c.pos.x, c.pos.z), way = St ? St.edge : { dx: fx, dz: fz }; let best = 99; for (const n of S.nodes) { const dx = n.x - c.pos.x, dz = n.z - c.pos.z, ax = dx * fx + dz * fz, lz = Math.abs(dx * fz - dz * fx); if (ax > 9 && ax < 40 && lz < 9) { const st = S.state(n, way); if (st === 'stop' || (st === 'amber' && ax > 24)) best = Math.min(best, ax); } } return best; })()`);
           if (red < 40) target = Math.min(target, Math.max(0, (red - 12) * 0.55));
           if (red < 40 && Math.abs(c.v) < 0.5) stuckT = 0;
           if (ah < 3) target = 0;
