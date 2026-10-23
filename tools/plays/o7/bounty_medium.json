@@ -48,8 +48,8 @@
    "label": "[O5b] he follows me"
   },
   {
-   "eval": "(() => { const s = G.city.places.byId.get('police'), d = s.door; const x = d.x + d.nx * 3.0, z = d.z + d.nz * 3.0; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), 0); G.stage.part('bounds').navAround(x, z, 20); return 1; })()",
-   "label": "[O5b] (a tool's move to headquarters' door: the walk across the city is not the contest - he catches up at my back)"
+   "eval": "(() => { const s = G.city.places.byId.get('police'), d = s.door; const x = d.x + d.nx * 3.0, z = d.z + d.nz * 3.0; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), 0); G.stage.part('bounds').navAround(x, z, 20); const M = G.night.bounty.men.get('b0'); if (M && M.c) { const q = { x: d.x + d.nx * 5.2, z: d.z + d.nz * 5.2 }; M.c.pos.x = q.x; M.c.pos.z = q.z; if (M.c.object) { M.c.object.position.x = q.x; M.c.object.position.z = q.z; } if (M.trail) M.trail.length = 0; } return 1; })()",
+   "label": "[O5b] (a tool's move of us both to headquarters' door - the walk across the city is not the contest; he no longer catches up by himself out of sight: after the critic he follows my way)"
   },
   {
    "wait": 1500

@@ -16,7 +16,7 @@
   { "wait": 500 },
   { "mouse": "click", "button": "left", "x": 640, "y": 300 },
   { "wait": 600 },
-  { "name": "a shot in the street: heat 2, he draws", "expect": "G.police.heat >= 2 && G.night.bounty.men.get('b0').mode === 'gun'" },
+  { "name": "a shot in the street: he draws (the heat is O3's now: a cop hears it or a witness reports it, not at once)", "until": "window.__fails.length > 0 || (G.night.bounty.men.get('b0') || {}).mode === 'gun'", "timeout": 8000 },
   { "until": "!!G.failing", "timeout": 90000, "label": "standing in the open: he puts me down" },
   { "until": "!G.failing && G.scenes.beat === 'hospital' && G.scenes.fadeK < 0.05", "timeout": 25000, "label": "up at the hospital beat" },
   { "wait": 800 },
