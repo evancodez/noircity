@@ -41,7 +41,7 @@ const FIRST = ['Sal', 'Vito', 'Eddie', 'Lou', 'Frankie', 'Mickey', 'Nate', 'Joey
 const LAST = ['Moretti', 'Kane', 'Doyle', 'Russo', 'Malloy', 'Brandt', 'Costa', 'Quinn', 'Falco', 'Ricci', 'Shea', 'Varga'];
 const NICK = ['the Knife', 'Two-Bits', 'the Ox', 'Lucky', 'the Priest', 'Spats', 'the Weasel', 'Blue'];
 const TURF = ['docks', 'tenements'];
-const _v = new THREE.Vector3(), _dir = new THREE.Vector3(), _ray = new THREE.Vector3();
+const _v = new THREE.Vector3(), _dir = new THREE.Vector3(), _ray = new THREE.Vector3(), _door = new THREE.Vector3();
 
 export class Bounty {
   constructor(night) {
@@ -261,57 +261,101 @@ export class Bounty {
   }
   // [O5b] taken in: up off the pavement, he follows me - at my heels on foot (a walk, a run when I
   // run), into the back of my car when I get in near him and out of it when I get out, through a
-  // door behind me; left 70 m behind for 8 s he is lost: back on his corner
+  // door behind me; left 70 m behind for 8 s he is lost: back on his corner.
+  // After the critic: he follows the way I went (a trail of my steps, or my car's), never put
+  // anywhere out of my sight (M.trail; the old 24 m catch-up is gone); he walks to the car's back door
+  // and gets in only when it stands (M1: he vanished the frame I pressed E); 'He's falling behind.'
+  // from 40 m before he is lost at 70 (WAVE_C rule 2); in my face he steps back to 2 m (M2)
   stepLed(M, dt) {
     const G = this.G, c = M.c, R = G.city;
     if (!c || M.t < 1.6) return;
     const me = G.controller.pos;
     const car = R && R.inCar ? R.car : null;
+    const col = c.fig && c.fig.collider;
     const put = (q) => { c.pos.x = q.x; c.pos.z = q.z; if (c.object) { c.object.position.x = q.x; c.object.position.z = q.z; } };
+    const T = M.trail || (M.trail = []);
+    // the trail: a point every 0.8 m of the way I went (on foot, or my car's way down the road)
+    { const at = car ? car.pos : me, last = T[T.length - 1]; if (!last || Math.hypot(at.x - last.x, at.z - last.z) > 0.8) { T.push({ x: at.x, z: at.z }); if (T.length > 400) T.shift(); } }
+    let goal = null, goalSp = 0;
     if (car) {
-      if (!M.inCar && Math.hypot(c.pos.x - car.pos.x, c.pos.z - car.pos.z) < 9) { M.inCar = true; if (c.object) c.object.visible = false; if (c.fig && c.fig.collider) c.fig.collider.gone = true; this.walkState(M, 'idle'); }
-      if (M.inCar) { put(car.pos); M.far = 0; return; }
+      if (M.inCar) { put(car.pos); M.far = 0; this.warnFar(M, false); return; }
+      // the car's back door on his side: he walks to it (runs, from far) and gets in while it stands
+      const side = car.local(c.pos, _v).z >= 0 ? 1 : -1;
+      const door = car.world(-car.spec.halfL * 0.3, side * (car.spec.halfW + 0.42), _door);
+      const dd = Math.hypot(door.x - c.pos.x, door.z - c.pos.z), still = car.speedAbs < 1.2;
+      if (still && dd < 0.5) {
+        M.inCar = true; T.length = 0;
+        if (c.object) c.object.visible = false;
+        if (col) col.gone = true;
+        this.walkState(M, 'idle');
+        G.sfx.play('b7_carDoor', new THREE.Vector3(door.x, 1.0, door.z));
+        G.emit('bounty:boarded', { id: M.b.id });
+        return;
+      }
+      if (still && Math.hypot(c.pos.x - car.pos.x, c.pos.z - car.pos.z) < 12) { goal = door; goalSp = dd > 3 ? 4.6 : 1.6; T.length = 0; }
     } else if (M.inCar) {
-      // (out of the back as I get out: beside me on the car's far side from the road's middle - behind me)
-      M.inCar = false;
+      // (out of the back as I get out: at the back door on my side, behind me)
+      M.inCar = false; T.length = 0;
       const f = G.camera.getWorldDirection(_dir);
       const q = _v.set(me.x - f.x * 1.4, 0, me.z - f.z * 1.4);
-      G.stage.colliders.resolve(q, 0.35, c.fig && c.fig.collider);
+      G.stage.colliders.resolve(q, 0.35, col);
       put(q);
       if (c.object) c.object.visible = true;
-      if (c.fig && c.fig.collider) c.fig.collider.gone = false;
+      if (col) col.gone = false;
     }
     const d = Math.hypot(me.x - c.pos.x, me.z - c.pos.z);
-    // (through a place's door behind me: he steps in at my back)
-    const P = R && R.places, S = P && P.inside;
-    if (S && d < 16) {
-      const L = S.lot, inLot = c.pos.x > L.x0 && c.pos.x < L.x1 && c.pos.z > L.z0 && c.pos.z < L.z1;
-      if (!inLot) { const f = G.camera.getWorldDirection(_dir); const q = _v.set(me.x - f.x * 1.3, 0, me.z - f.z * 1.3); G.stage.colliders.resolve(q, 0.35, c.fig && c.fig.collider); if (q.x > L.x0 && q.x < L.x1 && q.z > L.z0 && q.z < L.z1) put(q); }
+    // (through a place's door behind me, in or out: he steps through at my back - a door I just went
+    // through, him a few strides behind it, never across the city)
+    const P = R && R.places;
+    if (P && P.list && !car && d < 12) {
+      const lotOf = (x, z) => P.list.find((s) => s.lot && x > s.lot.x0 && x < s.lot.x1 && z > s.lot.z0 && z < s.lot.z1) || null;
+      const mine = P.inside || null, his = lotOf(c.pos.x, c.pos.z);
+      if (mine !== his) {
+        const f = G.camera.getWorldDirection(_dir); const q = _v.set(me.x - f.x * 1.3, 0, me.z - f.z * 1.3);
+        G.stage.colliders.resolve(q, 0.35, col);
+        if (lotOf(q.x, q.z) === mine) { put(q); T.length = 0; return; }
+      }
     }
-    // lost: left far behind for a while
+    // lost: left far behind for a while - warned first
+    this.warnFar(M, M.warned ? d > 30 : d > 40);
     M.far = d > 70 ? M.far + dt : 0;
     if (M.far > 8) { this.lose(M); return; }
-    // (caught up when far: a man who followed me round a corner is at my back, out of my sight)
-    if (d > 24) {
-      const f = G.camera.getWorldDirection(_dir); const q = _v.set(me.x - f.x * 3.2, 0, me.z - f.z * 3.2);
-      G.stage.colliders.resolve(q, 0.35, c.fig && c.fig.collider);
-      const L = S && S.lot, ok = !S || (q.x > L.x0 && q.x < L.x1 && q.z > L.z0 && q.z < L.z1);
-      if (ok) { put(q); return; }
+    if (!goal) {
+      // close: straight to me (the trail behind him forgotten); in my face: a step back
+      if (d < 5) T.length = 0;
+      if (d < 1.2) {
+        const a = Math.atan2(c.pos.x - me.x, c.pos.z - me.z), sp = 1.1;
+        const q = _v.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt);
+        G.stage.colliders.resolve(q, 0.35, col); put(q);
+        this.walkState(M, 'idle'); this.face(c, a + Math.PI, dt); c.speed = 0;
+        return;
+      }
+      if (d < 2.0) { this.walkState(M, 'idle'); this.face(c, Math.atan2(me.x - c.pos.x, me.z - c.pos.z), dt); c.speed = 0; return; }
+      // far: along the trail (the points he has passed dropped; a later one nearer him taken)
+      while (T.length > 1 && (Math.hypot(T[0].x - c.pos.x, T[0].z - c.pos.z) < 0.7 || Math.hypot(T[1].x - c.pos.x, T[1].z - c.pos.z) < Math.hypot(T[0].x - c.pos.x, T[0].z - c.pos.z))) T.shift();
+      goal = T.length && d > 5 ? T[0] : me;
+      goalSp = d > 12 ? 6.2 : d > 5 ? 4.6 : 1.5;
     }
-    if (d < 2.0) { this.walkState(M, 'idle'); this.face(c, Math.atan2(me.x - c.pos.x, me.z - c.pos.z), dt); c.speed = 0; return; }
-    const sp = d > 5 ? 4.6 : 1.5;
+    const sp = goalSp;
     this.walkState(M, sp > 2 ? 'run' : 'walk');
-    let a = Math.atan2(me.x - c.pos.x, me.z - c.pos.z);
+    let a = Math.atan2(goal.x - c.pos.x, goal.z - c.pos.z);
     const q = _v.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt);
-    G.stage.colliders.resolve(q, 0.35, c.fig && c.fig.collider);
-    if (Math.hypot(q.x - c.pos.x, q.z - c.pos.z) < sp * dt * 0.3) { a += (M.b.seed % 2 ? 1.3 : -1.3); q.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt); G.stage.colliders.resolve(q, 0.35, c.fig && c.fig.collider); }
+    G.stage.colliders.resolve(q, 0.35, col);
+    if (Math.hypot(q.x - c.pos.x, q.z - c.pos.z) < sp * dt * 0.3) { a += (M.b.seed % 2 ? 1.3 : -1.3); q.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt); G.stage.colliders.resolve(q, 0.35, col); }
     put(q);
     this.face(c, a, dt); c.speed = sp;
+  }
+  // [O5b] the kit's warning line while the man I lead falls behind (cleared when he is near again, in the car, or lost)
+  warnFar(M, on) {
+    const G = this.G, W = 'He\u2019s falling behind.';
+    if (on && !M.warned) { M.warned = true; G.hud.warn(W); }
+    else if (!on && M.warned) { M.warned = false; if (G.hud.warnText === W) G.hud.warn(null); }
   }
   walkState(M, st) { if (M.walk === st) return; M.walk = st; try { M.c.setState(st, 0.25); } catch (err) { /* */ } }
   // [O5b] the man I was leading lost (left behind, or the night went on without him): back on his corner
   lose(M, quiet = false) {
     const G = this.G, b = M.b;
+    this.warnFar(M, false);
     if (M.c && M.c.object) M.c.object.visible = true;
     b.state = 'out'; b.awayT = G.time;
     M.mode = 'gone';

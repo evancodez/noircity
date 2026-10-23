@@ -19,7 +19,7 @@ export default {
     const x0 = Math.max(b.x0 + 0.5, -7.0), x1 = Math.min(b.x1 - 0.5, 7.0), z1 = -0.3, zm = -8.0, z0 = Math.max(b.z0 + 0.5, -15.0), H = 3.9;
     K.roomRect = { x0, x1, z0: zm, z1 };
     // the hall
-    K.room(x0, x1, zm, z1, { h: H, floor: 'tile', wall: 'paper', look: { ambient: 0.6, haze: 0.2 }, sides: { s: { holes: P.doorHoles(s, 's') }, n: { holes: [{ a: x1 - 1.6, b: x1 - 0.6, top: FLOOR + 2.05 }] } } });
+    K.room(x0, x1, zm, z1, { h: H, floor: 'tile', wall: 'paper', look: { ambient: 0.36, haze: 0.2 }, sides: { s: { holes: P.doorHoles(s, 's') }, n: { holes: [{ a: x1 - 1.6, b: x1 - 0.6, top: FLOOR + 2.05 }] } } });
     K.box('wood', x0, x1, FLOOR, FLOOR + 1.2, zm, zm + 0.04, 0);
     // the high desk across the hall, the sergeant behind it, the gate at its end
     counter(K, x0 + 1.5, x1 - 2.2, -5.6, -4.9, { dir: 's', h: 1.12 });
@@ -29,19 +29,22 @@ export default {
     K.use({ at: [0, FLOOR + 1.5, -5.2], range: 2.4, cone: 0.55,
       prompt: () => { const B = BY(); if (B && B.ledNear()) return 'book him'; const o = B ? B.owed() : 0; return o ? `collect  $${o}` : 'the desk sergeant'; },
       onUse: () => deskUse(K, s, P) });
-    // the benches along the walls, the bounty board by the door
+    // the benches along the walls
     bench(K, x0 + 0.05, x0 + 0.55, -4.2, -1.2);
     bench(K, x1 - 0.55, x1 - 0.05, -4.2, -2.0);
-    const bx = x1 - 1.3;
-    label(K, 'WANTED', bx, FLOOR + 2.55, z1 - 0.0, { w: 1.3, h: 0.32, dir: 'n', dark: true });
-    for (let i = 0; i < 3; i++) sheet(K, bx - 0.45 + i * 0.45, FLOOR + 1.9, z1, { w: 0.4, h: 0.55, dir: 'n' });
-    K.bounty = { x: bx, y: FLOOR + 1.9, z: z1, dir: 'n', w: 1.4 };
+    // [O5b] after the critic (M5: the board hung beside the door, behind a man walking in; M4: on the
+    // front wall the sheets read right to left against the card): the board on the back wall behind
+    // the desk, left of the sergeant, under the left globe's light - the first thing lit as I come in - read left
+    // to right as the WANTED card; E at it from the desk's front (it is read over the desk)
+    const bx = Math.max(x0 + 1.2, -2.2);
+    label(K, 'WANTED', bx, FLOOR + 2.55, zm + 0.02, { w: 1.3, h: 0.32, dir: 's', dark: true });
+    for (let i = 0; i < 3; i++) sheet(K, bx - 0.45 + i * 0.45, FLOOR + 1.9, zm + 0.02, { w: 0.4, h: 0.55, dir: 's' });
+    K.bounty = { x: bx, y: FLOOR + 1.9, z: zm, dir: 's', w: 1.4 };
     // [O5b] the night's three posters on the sheets (O7's poster(): crossed when he is down, PAID when paid); E: the card
-    K.posters = [0, 1, 2].map((i) => ({ x: bx - 0.45 + i * 0.45, y: FLOOR + 1.9, z: z1 - 0.022 }));
-    K.use({ at: [bx, FLOOR + 1.9, z1 - 0.05], range: 2.2, cone: 0.45, prompt: 'the wanted board', onUse: () => { P.game.emit('bounty:look', {}); const B = BY(); if (B) B.use(); else P.game.hud.message('Three names. No faces yet.', 2.0); } });
+    K.posters = [0, 1, 2].map((i) => ({ x: bx - 0.45 + i * 0.45, y: FLOOR + 1.9, z: zm + 0.045 }));
+    K.use({ at: [bx, FLOOR + 1.9, zm + 0.05], range: 4.4, cone: 0.3, prompt: 'the wanted board', onUse: () => { P.game.emit('bounty:look', {}); const B = BY(); if (B) B.use(); else P.game.hud.message('Three names. No faces yet.', 2.0); } });
     K.lamp(-2.2, FLOOR + 3.2, -5.2, { kind: 'globe', power: 0.8, ceilY: FLOOR + H });
     K.lamp(2.4, FLOOR + 3.2, -5.2, { kind: 'globe', power: 0.8, ceilY: FLOOR + H });
-    K.lamp(bx, FLOOR + 3.1, -1.2, { kind: 'bare', power: 0.4, ceilY: FLOOR + H });
     label(K, 'POLICE', 0, FLOOR + 3.2, zm, { w: 1.8, h: 0.42, dir: 's', dark: true });
     // the back: the cells' corridor, the cells behind their bars
     K.room(x0, x1, z0, zm - 0.24, { h: H, floor: 'concrete', wall: 'concrete', ceil: 'dark', look: { ambient: 0.4, haze: 0.15 }, sides: { s: false } });
@@ -87,7 +90,7 @@ export default {
         const tex = new THREE.CanvasTexture(poster(b)); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
         const mat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color().setScalar(0.62) });
         mat.userData.inkSurface = 'lit';
-        const g = new THREE.PlaneGeometry(0.36, 0.5).rotateZ((i - 1) * 0.03).rotateY(Math.PI).translate(at.x, at.y, at.z);
+        const g = new THREE.PlaneGeometry(0.36, 0.5).rotateZ((i - 1) * 0.03).translate(at.x, at.y, at.z);
         const m = new THREE.Mesh(g, mat);
         m.matrixAutoUpdate = false; m.matrix.copy(F.M);
         m.userData.inkId = K.id + 3; m.userData.noRay = true; m.name = 'poster ' + b.id;

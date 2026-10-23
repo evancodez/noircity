@@ -58,13 +58,14 @@ export default {
     K.use({ at: [x0 + 5.6, FLOOR + 1.0, cz - 0.1], range: 2.0, cone: 0.25, prompt: 'next', onUse: () => { pick(s, P, 1); P.game.sfx.play('paperTouch', null, {}, { ref: 1 }); P.game.hud.message(cur(s, P).name, 1.2); } });
     K.caseAt = { x: x0 + 4.6, z: cz };
   },
-  // (O4's card of prices while I stand at the case)
+  // (O4's card of prices while I stand at the case; [O5b] after the critic, m2: the wall's list whole -
+  // a gun I own reads YOURS, not gone)
   live(K, s, P) {
     const G = P.game;
     return {
       step() {
         const c = K.F.w(K.caseAt.x, K.caseAt.z), d = Math.hypot(G.eye.x - c.x, G.eye.z - c.z);
-        priceCard(G.hud, d < 3.0 && P.inside === s && !G.failing ? ['GUNS  &  AMMUNITION', ...PRICES.filter((p) => !p.when || p.when(G)).map((p) => p.line), 'YOU HAVE  $' + money(G)] : []);
+        priceCard(G.hud, d < 3.0 && P.inside === s && !G.failing ? ['GUNS  &  AMMUNITION', ...PRICES.map((p) => (!p.when || p.when(G) ? p.line : p.line.replace(/\$\d+\s*$/, 'YOURS'))), 'YOU HAVE  $' + money(G)] : []);
       },
       dispose() { priceCard(G.hud, []); },
     };

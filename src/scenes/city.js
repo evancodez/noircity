@@ -356,6 +356,12 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // the eye's, up and down too: not above the roof line)
     if (((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 && f.y < 0.62) || db < 0.5) { nearCar = cv; nearD = db; }
   }
+  // [O5b] a locked car (the hospital's ambulance: its seat has no view to drive by) is no car to get
+  // into: E tries its door - the rattle, 'locked' - as a street door's
+  let lockedCar = null;
+  if (nearCar && nearCar.locked) { lockedCar = nearCar; nearCar = null; }
+  if (!!lockedCar !== !!T.lkShown || (lockedCar && hud.promptOwner !== 'citylk')) { T.lkShown = !!lockedCar; if (lockedCar) hud.prompt('E  try the door', null, 'citylk'); else hud.clearPrompt('citylk'); }
+  if (lockedCar && ctx.pressed('KeyE')) { G.sfx.play('f_c4rattle', new THREE.Vector3(lockedCar.pos.x, 1.2, lockedCar.pos.z)); hud.message('locked', 1.2); G.emit('city:locked', { car: lockedCar }); return; }
   near = !!nearCar;
   // E at the car: the teach card the first time (the key drawn; it goes when
   // I look away), the plain prompt after it - never both (the critic's M1)

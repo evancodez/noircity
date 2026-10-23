@@ -27,7 +27,7 @@ export default {
     const H = 3.7;
     K.roomRect = { x0, x1, z0: zh, z1 };
     // ---- the hall: pale tiled walls to the shoulder (the one white thing a hospital has), the desk under a hard pendant
-    K.room(x0, x1, zh, z1, { h: H, floor: 'lino', wall: 'plaster', look: { ambient: 0.42, haze: 0.3 }, sides: { s: { holes: P.doorHoles(s, 's') }, n: { holes: [{ a: -0.8, b: 0.8, top: FLOOR + 2.2 }] } } });
+    K.room(x0, x1, zh, z1, { h: H, floor: 'lino', wall: 'plaster', look: { ambient: 0.24, haze: 0.3 }, sides: { s: { holes: P.doorHoles(s, 's') }, n: { holes: [{ a: -0.8, b: 0.8, top: FLOOR + 2.2 }] } } });
     const dado = (x0_, x1_, za, zb) => K.box('linen', x0_, x1_, FLOOR, FLOOR + 1.35, za, zb, 0);
     dado(x0, -0.85, zh, zh + 0.03); dado(0.85, x1, zh, zh + 0.03);
     dado(x0, x0 + 0.03, zh, z1); dado(x1 - 0.03, x1, zh, z1);
@@ -37,7 +37,9 @@ export default {
     counter(K, dx0, dx1, dz0, dz1, { dir: 's', h: 1.08, top: 'woodHi' });
     K.box('linen', (dx0 + dx1) / 2 - 0.25, (dx0 + dx1) / 2 + 0.2, FLOOR + 1.08, FLOOR + 1.1, dz1 - 0.35, dz1 - 0.05, 3);
     K.fig('waitress', (dx0 + dx1) / 2, -5.2, 0, { name: 'nurse', state: 'idle' });
-    K.use({ at: [(dx0 + dx1) / 2, FLOOR + 1.3, dz1], range: 2.3, cone: 0.5, prompt: 'the nurse', onUse: () => nurse(s, P) });
+    // [O5b] after the critic (B2): the point is her head behind the desk (the sergeant's rule), not the
+    // counter's edge below the eye - at the desk's front, looking at her face, E answers
+    K.use({ at: [(dx0 + dx1) / 2, FLOOR + 1.55, -5.2], range: 2.6, cone: 0.5, prompt: 'the nurse', onUse: () => nurse(s, P) });
     label(K, 'ADMITTING', (dx0 + dx1) / 2, FLOOR + 2.55, zh, { w: 1.7, h: 0.3, dir: 's', dark: true });
     label(K, 'WARD', 0, FLOOR + 2.5, zh, { w: 0.8, h: 0.26, dir: 's', lit: true });
     label(K, 'NO SMOKING\nVISITORS 2 - 4', x0, FLOOR + 1.95, -2.4, { w: 0.9, h: 0.5, dir: 'e' });
@@ -46,9 +48,11 @@ export default {
     K.fig('oldman', x0 + 0.35, -4.4, Math.PI / 2, { name: 'waiting', state: 'sit', seat: { y: FLOOR + 0.46, name: 'bench' } });
     trolley(K, x1 - 0.55, -2.2, -0.3);
     K.solid(x1 - 0.95, x1 - 0.15, -3.3, -1.1);
-    // the light: one hard pendant over the desk, a dim globe by the door
+    // the light: one hard pendant over the desk; [O5b] after the critic (M3: the hall was an even grey
+    // box from the door) the room's dark and a second hard pendant over the floor before the swing
+    // doors - the pool a player sees first, the dado white in it, the corners black
     K.lamp((dx0 + dx1) / 2, FLOOR + 2.75, -4.0, { kind: 'pendant', power: 1.15, ceilY: FLOOR + H });
-    K.lamp(-1.8, FLOOR + 3.1, -2.0, { kind: 'globe', power: 0.3, ceilY: FLOOR + H });
+    K.lamp(-0.6, FLOOR + 2.8, -4.6, { kind: 'pendant', power: 1.2, ceilY: FLOOR + H });
     // the swing doors to the ward, the corridor behind them
     K.door({ x: -0.8, z: zh - 0.12, axis: 'x', w: 1.6, double: true, name: 'ward' });
     K.room(-1.1, 1.1, WARD_Z1 + 0.24, zh - 0.24, { h: 3.0, floor: 'tile', wall: 'plaster', look: { ambient: 0.3, haze: 0.25 }, sides: { s: false, n: false } });
@@ -97,7 +101,7 @@ export default {
       if (q === sl || q === mine) continue;
       // (the tour tries one of them: a sleep is 4 s of black)
       const aisle = q.side === 'w' ? q.xb + 0.9 : q.xa - 0.9;
-      K.use({ at: [q.x, FLOOR + 0.62, q.z], range: 2.2, cone: 0.42, prompt: 'sleep', onUse: () => P.sleepAt('ward'), tourAt: toured ? null : [aisle, q.z], tourSkip: toured });
+      K.use({ at: [q.x, FLOOR + 0.62, q.z], range: 2.6, cone: 0.42, prompt: 'sleep', onUse: () => wardSleep(s, P), tourAt: toured ? null : [aisle, q.z], tourSkip: toured });
       toured = true;
     }
     // ---- the outside (drawn with the street, K.outer): the ground floor's shop fronts of O1's block
@@ -181,6 +185,15 @@ function front(K, s) {
   K.outer.add(g.bulb);
   label(K, 'EMERGENCY', 0, FLOOR + 2.58, D + 0.01, { w: 1.5, h: 0.28, dir: 's', lit: true, outer: true });
   label(K, 'CITY  HOSPITAL', 0, FLOOR + 3.75, D + 0.01, { w: Math.min(5.0, a1 - a0 - 1), h: 0.5, dir: 's', dark: true, outer: true });
+}
+
+// [O5b] after the critic (B3: a free bed cleared heat 2 in four seconds, gunmen at the door): a ward's
+// bed is a sleep, a save and a mend at heat 0 only; with the law on me the night nurse says no
+// (the heat is lost the city's way: out of their sight, a change of car, time)
+function wardSleep(s, P) {
+  const G = P.game, h = G.police ? G.police.heat || 0 : 0;
+  if (h > 0) { G.sfx.play('paperTouch', null, {}, { ref: 1 }); G.hud.message('Not with the law on your heels.', 2.0); G.emit('ward:refused', { heat: h }); return; }
+  P.sleepAt('ward');
 }
 
 // E at the desk: the nurse's word (after a wake: the bill; else the night's)
@@ -268,5 +281,9 @@ function ambulance(G, s) {
   lamp.position.set(1.35, 2.68, 0); lamp.userData.inkId = ink; lamp.userData.inkFigure = true;
   v.body.add(lamp);
   v.ambulance = true;
+  // [O5b] after the critic (B1: E took it, and its seat looked into the box - the lorry has no cab
+  // view to drive by): locked. E at it tries the door - the rattle, 'locked' (city.js) - until O2's
+  // ambulance comes with a seat that sees
+  v.locked = true;
   return v;
 }
