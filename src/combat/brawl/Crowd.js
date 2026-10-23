@@ -74,7 +74,7 @@ export const CROWD = {
   // the fight's opening: no cued blow before firstCue s of it (the first man walks in); the first in after firstIn
   firstCue: 5.0, firstIn: 2.0,
   // the cards: one at a time, gap s between two (from the last one's start), the first at first s
-  card: { gap: 5.5, first: 0.8 },
+  card: { gap: 5.5, first: 0.8, read: 3.2 },
   // a thing (a bottle, a chair): taken within reach m of where I stand (its middle), within cone rad of where I look
   take: { reach: 1.5, cone: 0.8 },
   // the men going off after the fight (left: they walk; a gun drawn: they run); gone past far m or after secs
@@ -741,7 +741,8 @@ export class Crowd {
     const mix = { ...K.mix };
     if (!seen) for (const k of Object.keys(mix)) if (!BIG.test(k)) delete mix[k];
     // (never two big ones on me together: a second man throws a small one, or waits)
-    if (this.T - this.lastBig < CROWD.ring.bigGap || this.liveT < CROWD.firstCue || this.men.some((o) => o !== m && o.state === 'atk' && cued(o.clip) && !o.done)) for (const k of Object.keys(mix)) if (cued(k)) delete mix[k];
+    // (and not while a card is being read: a card gets its seconds before a cue takes it down)
+    if (this.T - this.lastBig < CROWD.ring.bigGap || this.liveT < CROWD.firstCue || this.T - this.cardAt < CROWD.card.read || this.men.some((o) => o !== m && o.state === 'atk' && cued(o.clip) && !o.done)) for (const k of Object.keys(mix)) if (cued(k)) delete mix[k];
     let tot = 0; for (const v of Object.values(mix)) tot += v;
     if (tot <= 0) return { clip: null };
     let x = r.next() * tot, clip = 'br_jab';

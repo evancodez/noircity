@@ -1,5 +1,5 @@
 {
- "about": "[O4] after the critic: the cards of a fresh save's first fight (1v2, medium hands): one at a time, 5.5 s apart at least, none while a man is in his blow, none but the dodge's while a cue is live; the first cue after 5 s of the fight; the men wait for the fade and the card",
+ "about": "[O4] after the critic: the cards of a fresh save's first fight (1v2, medium hands): one at a time, 5.5 s apart at least, none while a man is in his blow, none but the dodge's while a cue is live; the first cue after 5 s of the fight; the men wait for the fade and the card; no cue while a card is being read (3 s from its coming)",
  "url": "/?mute=1&o4stay=1&start=o4.brawl2",
  "size": [
   1280,
@@ -56,6 +56,9 @@
   },
   {
    "expect": "(()=>{const C=window.__cards.cards.filter(c=>c.id!=='dodge');for(let i=1;i<C.length;i++)if(C[i].t-C[i-1].t<5.4)return false;return C.every(c=>!c.atk.length)})()"
+  },
+  {
+   "expect": "(()=>{const R=window.__cards,C=R.cards.filter(c=>c.id!=='dodge');return R.cues.every(q=>!C.some(c=>c.t<=q.t&&q.t-c.t<3.0))})()"
   }
  ]
 }
