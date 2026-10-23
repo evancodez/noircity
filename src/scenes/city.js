@@ -174,6 +174,9 @@ function step(ctx, R, T, dt) {
     return;
   }
   T.foot += dt;
+  // the car I left rolls out what was left of its roll, its brakes on, and
+  // stands (nothing else steps a parked car yet: O2's traffic will)
+  if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
   // on foot: the river (walked off a pier's end, down a slipway, the steps)
   if (C.inWater(ctl.pos.x, ctl.pos.z) && ctl.groundY < -0.6) { wet(ctx, R, ctl.pos, 'Into the river.'); return; }
   // E at the car: any door, looking at it, close by
