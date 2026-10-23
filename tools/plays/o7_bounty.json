@@ -18,7 +18,7 @@
   { "key": "KeyE", "hold": 80 },
   { "wait": 400 },
   { "expect": "!G.night.bounty.open && !G.night.holding", "label": "E: put back" },
-  { "eval": "(() => { const b = G.night.bounty.names()[0]; window.__b = b; G.stage.part('stream').warmAround(b.x, b.z); const px = b.x + 9, pz = b.z; N.controller.setPose(px, pz, Math.atan2(-(b.x - px), -(b.z - pz)), -0.02); G.stage.part('bounds').navAround(px, pz, 20); return [b.name, b.district, b.x, b.z]; })()" },
+  { "eval": "(() => { const b = G.night.bounty.names()[0]; window.__b = b; G.stage.part('stream').warmAround(b.x, b.z); const g = G.night.graph(); let px = b.x + 9, pz = b.z; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, q = new N.THREE.Vector3(b.x + Math.cos(a) * 9, 0, b.z + Math.sin(a) * 9); const q0 = q.clone(); G.stage.colliders.resolve(q, 0.4); if (q.distanceTo(q0) < 0.05 && g.lineOfSight(q.x, q.z, b.x, b.z) && !G.stage.part('city').C.inWater(q.x, q.z)) { px = q.x; pz = q.z; break; } } N.controller.setPose(px, pz, Math.atan2(-(b.x - px), -(b.z - pz)), -0.02); G.stage.part('bounds').navAround(px, pz, 20); return [b.name, b.district, b.x, b.z]; })()" },
   { "until": "!!G.night.bounty.men.get('b0')", "timeout": 3000, "label": "he stands on his corner" },
   { "eval": "(G.player.weapons.equip('revolver'), G.setViewmodelVisible(true), 1)" },
   { "wait": 1500 },
