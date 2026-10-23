@@ -1,0 +1,135 @@
+{
+ "about": "[O8 critic] a car into people by real input in the city (not the bed): E into the car at the start, three walkers stood in its path (12, 20, 30 m), W held; how each goes down, where he lies, whether he lies solid and still; then out (E) and walked over the first body.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o8",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 25000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 4000,
+   "label": "in the car"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.city.car.kmh > 32",
+   "timeout": 6000
+  },
+  {
+   "eval": "(() => { const c = G.city.car, P = G.people; const f = [Math.cos(c.yaw), -Math.sin(c.yaw)]; P.dbgClear(); window.__v = [9, 14, 20].map((d, i) => P.dbgWalker(c.pos.x + f[0] * d + (i - 1) * 0.3, c.pos.z + f[1] * d, c.yaw + Math.PI / 2)); window.__minY = [9,9,9]; window.__maxY = [0,0,0]; window.__iv = setInterval(() => window.__v.forEach((p, i) => { const R = p.fig && p.fig.rag; if (R) for (const q of R.p) { window.__minY[i] = Math.min(window.__minY[i], q.y); window.__maxY[i] = Math.max(window.__maxY[i], q.y); } }), 16); return JSON.stringify({ car: [c.pos.x, c.pos.z, c.yaw], f, v: window.__v.map(p => [p.kind, +p.pos.x.toFixed(1), +p.pos.z.toFixed(1)]) }); })()"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "eval": "JSON.stringify({ inCar: G.city.inCar, kmh: +G.city.car.kmh.toFixed(0), car:[+G.city.car.pos.x.toFixed(1), +G.city.car.pos.z.toFixed(1)], men: window.__v.map(p => [p.mode, !!p.down, +p.pos.x.toFixed(1), +p.pos.z.toFixed(1)]) })"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "JSON.stringify({ inCar: G.city.inCar, kmh: +G.city.car.kmh.toFixed(0), car:[+G.city.car.pos.x.toFixed(1), +G.city.car.pos.z.toFixed(1)], men: window.__v.map(p => [p.mode, !!p.down, +p.pos.x.toFixed(1), +p.pos.z.toFixed(1)]) })"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "JSON.stringify({ inCar: G.city.inCar, kmh: +G.city.car.kmh.toFixed(0), car:[+G.city.car.pos.x.toFixed(1), +G.city.car.pos.z.toFixed(1)], men: window.__v.map(p => [p.mode, !!p.down, +p.pos.x.toFixed(1), +p.pos.z.toFixed(1)]) })"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "JSON.stringify({ inCar: G.city.inCar, kmh: +G.city.car.kmh.toFixed(0), car:[+G.city.car.pos.x.toFixed(1), +G.city.car.pos.z.toFixed(1)], men: window.__v.map(p => [p.mode, !!p.down, +p.pos.x.toFixed(1), +p.pos.z.toFixed(1)]) })"
+  },
+  {
+   "eval": "JSON.stringify({ kmh: +G.city.car.kmh.toFixed(0), hit: window.__v.map(p => [p.mode, !!p.down]) })"
+  },
+  {
+   "wait": 250
+  },
+  {
+   "shot": "k1_hit"
+  },
+  {
+   "wait": 2600
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "Space"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "Space"
+  },
+  {
+   "shot": "k2_after"
+  },
+  {
+   "wait": 3000
+  },
+  {
+   "eval": "(clearInterval(window.__iv), JSON.stringify({ kmh: +G.city.car.kmh.toFixed(0), men: window.__v.map((p, i) => ({ k: p.kind, mode: p.mode, down: !!p.down, dead: !!p.dead, at: [+p.pos.x.toFixed(1), +p.pos.z.toFixed(1)], minY: +window.__minY[i].toFixed(2), maxY: +window.__maxY[i].toFixed(2), rag: !!(p.fig && p.fig.rag), asleep: p.fig && p.fig.rag ? p.fig.rag.asleep : null })), car: [+G.city.car.pos.x.toFixed(1), +G.city.car.pos.z.toFixed(1)], stats: G.people.stats, heat: G.police.heat }))"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "until": "!G.city.inCar",
+   "timeout": 4000,
+   "label": "out of the car"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "(() => { const p = window.__v.find(q => q.down) || window.__v[0]; window.__b = p; return JSON.stringify({ me: [+G.eye.x.toFixed(1), +G.eye.z.toFixed(1)], body: [+p.pos.x.toFixed(1), +p.pos.z.toFixed(1)], mode: p.mode }); })()"
+  },
+  {
+   "walk": "[[window.__b.pos.x, window.__b.pos.z], [window.__b.pos.x + (window.__b.pos.x - G.eye.x) * 0.5, window.__b.pos.z + (window.__b.pos.z - G.eye.z) * 0.5]]",
+   "timeout": 12000
+  },
+  {
+   "eval": "JSON.stringify({ me: [+G.eye.x.toFixed(1), +G.eye.z.toFixed(1)], eyeY: +G.eye.y.toFixed(2), body: [+window.__b.pos.x.toFixed(1), +window.__b.pos.z.toFixed(1)], mode: window.__b.mode, say: [...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,40)).join(' | ') })"
+  },
+  {
+   "shot": "k3_body"
+  },
+  {
+   "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()",
+   "label": "no errors in #errlog"
+  }
+ ]
+}
