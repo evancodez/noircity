@@ -2,17 +2,79 @@
  "about": "[O1b] The items by the pad alone (?padfake=1; the keyboard and the mouse never used): X on BEGIN; square at a roll of cash, a box of rounds, a matchbook, a paper (its front page): each taken, its count seen; square into the coupe (its glovebox). node tools/play.mjs tools/plays/o1b_pad.json",
  "url": "/?mute=1&padfake=1&start=city",
  "input": "pad",
- "size": [1280, 800],
+ "size": [
+  1280,
+  800
+ ],
  "out": "shots/o1b/pad",
  "steps": [
-  { "until": "G.state === 'title' && N.hud.titleShown", "timeout": 40000 },
-  { "wait": 1500 },
-  { "pad": { "b": ["x"], "secs": 0.12 }, "label": "the first press wakes the pad" },
-  { "wait": 400 },
-  { "pad": { "b": ["x"], "secs": 0.12 } },
-  { "until": "G.scenes.current && G.scenes.current.id === 'city' && !G.scenes.fadeK", "timeout": 45000 },
-  { "wait": 1000 },
-  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, 1)" },
-  { "drive": "tools/lib/o1b_streets.mjs", "mode": "items", "kinds": ["cash", "rounds", "matchbook", "paper"], "check": "D.bad.length === 0", "label": "the pad's square takes each thing, its count seen" }
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   },
+   "label": "the first press wakes the pad"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && !G.scenes.fadeK",
+   "timeout": 45000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true }, 1)"
+  },
+  {
+   "drive": "tools/lib/o1b_streets.mjs",
+   "mode": "items",
+   "kinds": [
+    "cash",
+    "rounds",
+    "matchbook",
+    "paper"
+   ],
+   "check": "D.bad.length === 0",
+   "label": "the pad's square takes each thing, its count seen"
+  },
+  {
+   "wait": 600
+  },
+  {
+   "pad": {
+    "b": [
+     "share"
+    ],
+    "secs": 0.12
+   },
+   "label": "[O1b] after the critic (M5): the pad's share is the rulebook's Tab"
+  },
+  {
+   "wait": 400
+  },
+  {
+   "expect": "/\\$\\s*\\d+/.test(G.stage.part('items').pockets() || '')",
+   "label": "what I carry shown (the money, the rounds, the matchbooks)"
+  }
  ]
 }
