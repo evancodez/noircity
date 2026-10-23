@@ -129,6 +129,18 @@ export function thingTick(G, R) {
   return R.fistBeat != null && G.time < R.fistBeat;
 }
 
+// a struck car's springs posed while nothing else steps it (a step adds to its hardT: then its own
+// step posed it) - city.js calls it every step on foot, before anything there may return
+export function rockTick(G, R) {
+  const dt = Math.min(0.1, Math.max(0, G.time - (R.fistTickT ?? G.time)));
+  R.fistTickT = G.time;
+  if (R.rocking && R.rocking.size) for (const v of R.rocking) {
+    if (G.time > v.rockUntil || !v.body) { R.rocking.delete(v); continue; }
+    if (v.hardT === v.rockHardT && dt > 0) v.pose(dt);
+    v.rockHardT = v.hardT;
+  }
+}
+
 function answer(G, R, T, dir, heavy, S) {
   const sfx = G.sfx, ctl = G.controller;
   let hurtNow = false;
@@ -214,8 +226,9 @@ function answer(G, R, T, dir, heavy, S) {
       const side = Math.abs(l.z) / Sp.halfW > Math.abs(l.x) / Sp.halfL, a = heavy ? 0.85 : 0.55;
       if (side) v.rollV = (v.rollV || 0) - Math.sign(l.z || 1) * a; else v.pitchV = (v.pitchV || 0) + Math.sign(l.x || 1) * a * 0.7;
       v.shake = Math.min(1, (v.shake || 0) + 0.35);
-      // (stepped a second while it rocks: O2's wheels step a car left standing while it is touched)
-      v.touchT = -0.8;
+      // (its springs posed a second and a half while nothing else steps it: thingTick - a parked
+      // car is never stepped, and a step would let its physics shove it off the kerb)
+      (R.rocking || (R.rocking = new Set())).add(v); v.rockUntil = G.time + 1.5;
     }
     D.fistT = G.time; if (T.parked) T.parked.fistT = G.time;
     sfx.play('c3_dent', T.point, { k: heavy ? 0.7 : 0.5 }, { ref: 3 });

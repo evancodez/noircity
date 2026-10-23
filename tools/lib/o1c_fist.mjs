@@ -119,6 +119,13 @@ export default async function o1cFist({ js, keyDown, keyUp, mouse, sleep, log, o
   await js(HELPERS);
   const out = [];
   for (const T of opts.targets || []) {
+    // (each target from a quiet street: the last one's heat cleared and any arrest over first -
+    // the walk is about the thing's answer; the heat's contest is the cop's bin here and the
+    // critic's c4 / c5)
+    if (!T.keepHeat) {
+      for (let k = 0; k < 30 && (await js('!!G.failing || G.state !== "playing"')); k++) await sleep(500);
+      await js('(G.police && G.police.heat > 0 ? G.police.clear("reset") : 0, 1)');
+    }
     const tg = await js(`(() => { const t = ${T.find}; if (!t) return null; window.__t = t; const it = t.it || null;
       const r = it ? (it.K.round ? it.K.r : Math.max(it.fp ? Math.min(it.fp.hx, it.fp.hz) : 0.3, 0.2)) : (t.r || 0.3);
       const st = t.stand || window.__standBy(t.x, t.z, r, ${T.gap ?? 0.75});
