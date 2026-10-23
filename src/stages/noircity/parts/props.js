@@ -34,6 +34,14 @@ export default {
     // the lamps' mouths in the far tiles (always drawn): their colour ranges
     const far = stage.part('far');
     if (far) for (const t of far.tiles) smash.chunkIn('far:' + t.key, t.meshes);
+    // (the lamps' own answer to a round in a head: O1's stage.lamps.hit gave null)
+    const L = stage.part('lamps');
+    if (L) L.hit = (lamp, hit, dir) => {
+      const it = lamp && lamp.src ? smash.byRec.get(lamp.src) : null;
+      if (!it || it.dark || it.state !== 'stand' || !hit || hit.point.distanceTo(lamp.head) > 0.8) return null;
+      smash.shootLamp(it, dir);
+      return 'done';
+    };
     return {
       smash,
       nearGrate: null,

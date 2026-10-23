@@ -681,7 +681,7 @@ export class Smash {
     it.flick = { t: 0, dur: fall ? this.rnd(0.35, 0.6) : this.rnd(0.9, 1.6), seed: this.rnd(0, 100), on: true };
     // its own lit mouth while it flickers (a few at once: the oldest goes dark)
     let b = this.bulbs.find((x) => !x.visible);
-    if (!b && this.bulbs.length < 4) { b = new THREE.Mesh(this.bulbGeo, this.bulbMat); b.userData.inkId = this.idOf('bulb'); b.userData.noRay = true; b.userData.emitter = true; this.group.add(b); this.bulbs.push(b); }
+    if (!b && this.bulbs.length < 4) { b = new THREE.Mesh(this.bulbGeo, this.bulbMat); b.userData.inkId = this.idOf('bulb'); b.userData.noRay = true; this.group.add(b); this.bulbs.push(b); }
     if (b) { b.visible = true; it.bulb = b; }
   }
   // a round in its head: glass, sparks, the pop; a buzz back on, then dark
@@ -1100,9 +1100,9 @@ export class Smash {
     const g = { at: new THREE.Vector3(it.x, it.y0 + 0.12, it.z), t: 0, acc: 0, dead: false, it };
     this.geysers.push(g);
     it.geyser = g;
-    // (three at most in full spate: the oldest falls to a dribble)
+    // (two at most in full spate: the oldest falls to a dribble - the splash pool is 300 drops)
     const full = this.geysers.filter((x) => !x.dead && x.t < 40);
-    if (full.length > 3) full[0].t = Math.max(full[0].t, 40);
+    if (full.length > 2) full[0].t = Math.max(full[0].t, 40);
     if (G0) G0.sfx.hydrant(g.at);
   }
   jet(at, dir, fluid = 'water', life = 10) {
@@ -1120,16 +1120,18 @@ export class Smash {
       // a minute of it: full for 40 s, then dying to a dribble
       const k = Math.min(1, g.t / 0.3) * (g.t > 40 ? Math.max(0.05, 1 - (g.t - 40) / 20) : 1);
       if (g.t > 60) { g.dead = true; continue; }
-      g.acc += dt * 70 * k;
+      // (a white column off the stump, opening into a crown that rains back down round it)
+      g.acc += dt * 95 * k;
       while (g.acc >= 1) {
         g.acc -= 1;
-        const up = this.rnd(6.5, 10) * Math.sqrt(k);
-        G0.fx.splash.spawn({ pos: g.at.clone().add(_v.set(this.gauss() * 0.05, 0, this.gauss() * 0.05)), vel: new THREE.Vector3(this.gauss() * 0.55, up, this.gauss() * 0.55), life: this.rnd(1.0, 1.7), size: [0.03, 0.1], stretch: 0.07,
-          col: [0.6, 0.6, 0.6], alpha: 0.9, cell: ATLAS.DROP, gravity: 9.8, ground: g.at.y - 0.1, fadeOut: 0.2 });
+        const up = this.rnd(6.5, 10.5) * Math.sqrt(k), sp = this.rnd() < 0.3 ? 1.1 : 0.45;
+        G0.fx.splash.spawn({ pos: g.at.clone().add(_v.set(this.gauss() * 0.05, 0, this.gauss() * 0.05)), vel: new THREE.Vector3(this.gauss() * sp, up, this.gauss() * sp), life: this.rnd(1.0, 1.8), size: [0.045, 0.16], stretch: 0.08,
+          col: [1.1, 1.1, 1.1], alpha: 0.95, cell: ATLAS.DROP, gravity: 9.8, ground: g.at.y - 0.1, fadeOut: 0.2 });
       }
       // the fall of it on the street: rings on the wet round the stump
       if (this.rnd() < dt * 8 * k && this.stage.street && this.stage.street.addImpact) this.stage.street.addImpact(this.stage, g.at.x + this.gauss() * 1.2, g.at.z + this.gauss() * 1.2, 0.4);
-      if (this.rnd() < dt * 3 * k) G0.fx.dust.spawn({ pos: g.at.clone().add(_v.set(this.gauss() * 0.4, this.rnd(3, 6) * Math.sqrt(k), this.gauss() * 0.4)), vel: new THREE.Vector3(this.gauss() * 0.3, -0.4, this.gauss() * 0.3), life: this.rnd(0.8, 1.4), size: [0.7, 0.7], grow: 0.6, rot: this.rnd(0, 6.28), col: [0.5, 0.5, 0.5], alpha: 0.18, drag: 1.2, fadeOut: 0.6 });
+      // (spray where it falls back: a low pale haze round the stump)
+      if (this.rnd() < dt * 4 * k) G0.fx.dust.spawn({ pos: g.at.clone().add(_v.set(this.gauss() * 0.6, this.rnd(0.1, 0.6), this.gauss() * 0.6)), vel: new THREE.Vector3(this.gauss() * 0.4, 0.3, this.gauss() * 0.4), life: this.rnd(0.8, 1.3), size: [0.45, 0.35], grow: 0.8, rot: this.rnd(0, 6.28), col: [0.7, 0.7, 0.7], alpha: 0.1, drag: 1.5, fadeOut: 0.6 });
     }
     for (let i = this.jets.length - 1; i >= 0; i--) {
       const J = this.jets[i];
@@ -1297,8 +1299,10 @@ export class Smash {
     // far from the eye: mended (a few looked at a step, round the list)
     if (G0 && (this.out.length || this.dark.length)) {
       const e = G0.camera.position;
-      const L = this.out.length ? this.out : this.dark;
-      this._mi = ((this._mi || 0) + 1) % L.length;
+      // (the lists in turn: what is out, then the dark lamps)
+      this._ml = !this._ml;
+      const L = (this._ml && this.out.length) || !this.dark.length ? this.out : this.dark;
+      this._mi = ((this._mi || 0) + 1) % Math.max(1, L.length);
       const it = L[this._mi];
       if (it && Math.hypot(it.x - e.x, it.z - e.z) > MEND_R && !(it.geyser && !it.geyser.dead && it.geyser.t < 60)) this.mend(it);
     }

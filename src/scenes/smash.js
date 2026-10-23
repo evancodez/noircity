@@ -206,7 +206,7 @@ function place(ctx, at = {}) {
   const me = at.me || BED.me;
   ctx.controller.setPose(me.x, me.z, me.yaw, me.pitch ?? -0.04);
   G.player.weapons.equip('tommy');
-  G.setViewmodelVisible(true);
+  G.setViewmodelVisible(typeof location === 'undefined' || new URLSearchParams(location.search).get('vm') !== '0');   // (vm=0: the strips without the gun)
   if (G.weapon && G.weapon.ammo != null) G.weapon.ammo = 50;
   stage.part('bounds').navAround(me.x, me.z, 14);
   // (a blast's push on me: too near is a fall, back at the start)
@@ -230,13 +230,35 @@ function lookDev(ctx) {
   if (!st || !S) return;
   const [kind, rest] = st.split('@');
   const [at, sp, dx, dz] = (rest || '0.5').split(',').map(Number);
-  const it = S.items.find((i) => i.kind === kind && i.rec && i.rec.bed) || S.items.find((i) => i.kind === kind && Math.hypot(i.x - BED.car.x, i.z - BED.car.z) < 50);
+  // (the nearest of that kind to the eye)
+  const e = ctx.controller.pos;
+  let it = null;
+  for (const i of S.near(e.x, e.z, 30)) if (i.kind === kind && (!it || Math.hypot(i.x - e.x, i.z - e.z) < Math.hypot(it.x - e.x, it.z - e.z))) it = i;
   if (!it) return;
   const t0 = G.time;
   const f = () => {
     if (G.time - t0 < at) return;
     G.scripts.splice(G.scripts.indexOf(f), 1);
     S.hit(it, null, V(dx || 1, 0, dz || 0).normalize().multiplyScalar(sp || 8), 'car');
+  };
+  G.scripts.push(f);
+}
+
+// (the budget's moment: ?all=<t> in the hundred beat - every one of the hundred
+// pushed over at once, as a blast in their middle would, and the shop glass with them)
+function allOver(ctx) {
+  const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+  const at = q && q.get('all');
+  const G = ctx.game, S = ctx.stage.smash, H = ctx.stage._hundred;
+  if (at == null || !S || !H) return;
+  const t0 = G.time;
+  let r = 0x51A5;
+  const rnd = () => { r = (r * 16807) % 2147483647; return r / 2147483647; };
+  const f = () => {
+    if (G.time - t0 < +at) return;
+    G.scripts.splice(G.scripts.indexOf(f), 1);
+    for (const rec of H.recs) { const it = S.itemOf(rec); if (it && it.state === 'stand') { const a = rnd() * 6.283; S.hit(it, null, V(Math.cos(a), 0, Math.sin(a)).multiplyScalar(5 + 5 * rnd()), 'blast'); } }
+    for (const it of S.items) if (it.kind === 'glass' && it.state === 'stand') S.hit(it, null, V(-1, 0, 0).multiplyScalar(6), 'blast');
   };
   G.scripts.push(f);
 }
@@ -297,8 +319,9 @@ export default defineScene({
     // a hundred things round the sedan, its fuse at a second
     hundred(ctx) {
       hundred(ctx);
-      const { sedan } = place(ctx, { sedan: { x: -122.5, z: 22, yaw: 0.3 }, me: { x: -110.0, z: 44.0, yaw: -0.3, pitch: -0.05 } });
+      const { sedan } = place(ctx, { sedan: { x: -122.5, z: 22, yaw: 0.3 }, me: { x: -112.0, z: 46.0, yaw: 0.22, pitch: -0.06 } });
       sedan.damage = 4.2;
+      allOver(ctx);
     },
   },
   *script(ctx) {

@@ -1,5 +1,5 @@
 {
- "about": "[O6] The drive-through (brief O6 §4): from the bed's start, E into the coupe, down the east pavement, across the junction, up the west pavement and into a shop window, by the keys (W / S / A / D: pure pursuit on a path, tools/lib/o6_smash.mjs drive). Every kind of the set goes over or breaks by the car; the car is never inside a standing thing; after it, nothing floats, nothing is inside a wall, everything rests. node tools/play.mjs tools/plays/o6_drive.json",
+ "about": "[O6] The drive-through (brief O6 §4): from the bed's start, E into the coupe, down the east pavement, across the junction, up the west pavement and into a shop window, by the keys (W / S / A / D: pure pursuit on a path, tools/lib/o6_smash.mjs drive). Every kind of the set goes over or breaks by the car; the car is never inside a standing thing; after it, nothing floats, nothing is inside a wall, everything rests. Then out of the car and on foot into what lies (walkinto): a stall, a newsstand, a call box over on the pavement stop a man. node tools/play.mjs tools/plays/o6_drive.json",
  "url": "/?mute=1&start=smash",
  "size": [1280, 800],
  "out": "shots/o6/drive",
@@ -8,9 +8,14 @@
   { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
   { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
   { "wait": 1200 },
-  { "drive": "tools/lib/o6_smash.mjs", "mode": "drive", "speed": 9.5, "settle": 5000,
-    "shots": { "12": "a12", "30": "a30", "55": "a55", "80": "a80", "95": "a95" },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "drive", "speed": 9.5, "settle": 5000, "shots": { "40": "d1_east_kerb", "100": "d2_west_kerb" },
     "check": "D.end === 'done' && ['newsstand','hydrant','stall','crate','callbox','bin','bench','stop','lamp','fence','glass'].every((k) => D.kinds[k] > 0) && D.inside.length === 0 && D.rest.floating.length === 0 && D.rest.inWall.length === 0 && D.rest.live === 0",
-    "label": "every kind over by the car, nothing passed through, nothing floating, everything resting" }
+    "label": "every kind over by the car, nothing passed through, nothing floating, everything resting" },
+  { "key": "KeyE", "hold": 70 },
+  { "until": "!G.city.inCar", "timeout": 6000 },
+  { "wait": 900 },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "walkinto", "kinds": ["stall", "newsstand", "callbox"],
+    "check": "D.walks.filter((w) => !w.err).length >= 2 && D.walks.every((w) => w.err || (w.inside === 0 && w.min > -0.05))",
+    "label": "on foot into what lies (a stall, a newsstand, a call box over on the pavement): stopped by each, never inside" }
  ]
 }
