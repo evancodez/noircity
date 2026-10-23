@@ -477,7 +477,8 @@ function wet(ctx, R, at, why) {
 // kerb down the street
 const HOSPITAL = { x: -36.5, z: 66 };
 // [O3] the arrest's wake in O5's cell (false: the pavement at the headquarters' door - see the station beat)
-const STATION_CELL = false;
+// [O5b] true: the cell's bench faces its bars and the corridor's lamp (it faced its own wall: the black)
+const STATION_CELL = true;
 function wakeAt(ctx, what) {
   const stage = ctx.stage, C = stage.part('city').C, g = stage.part('city').graph;
   let x, z, yaw, pitch = -0.06;

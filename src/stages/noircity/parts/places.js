@@ -128,7 +128,9 @@ export default {
       signs.push({ text, x, z, n, kind: 'blade', col });
     };
     // a flat sign on the wall
-    const flat = (x, z, n, y, text, w, h, kind, col = 'blue', res = 1) => {   // ([O1b] res: the atlas's pixels a metre, a share of PX - the painted names are big and seen far)
+    const flat = (x, z, n, y, text, w, h, kind, col = 'blue', res = 1, off = 0) => {   // ([O1b] res: the atlas's pixels a metre, a share of PX - the painted names are big and seen far)
+      // ([O5b] off: stood further out from the wall - over a fascia that would cut its letters)
+      if (off) { x += n[0] * off; z += n[1] * off; }
       const yawN = Math.atan2(-n[1], n[0]) + Math.PI / 2;
       boards.push(box(x + n[0] * 0.05, y, z + n[1] * 0.05, w + 0.12, h + 0.12, 0.1, yawN));
       const uv = kind === 'neon' ? neonFace(text, col, w * res, h * res, false) : boardFace(text, w * res, h * res, kind === 'lit');
@@ -170,7 +172,8 @@ export default {
       } else if (P.kind === 'bar') {
         flat(dx + tx * 1.8, dz + tz * 1.8, n, 3.6, 'BAR', 1.8, 0.8, 'neon', 'blue');
       } else if (P.kind === 'police' || P.kind === 'station') {
-        flat(dx, dz, n, 4.3, 'POLICE', 4.2, 0.8, 'lit');
+        // [O5b] (from O3's merge: the ground floor's fascia cut the letters' lower half - the board stood out over it)
+        flat(dx, dz, n, 4.3, 'POLICE', 4.2, 0.8, 'lit', 'blue', 1, 0.32);
         // the two globe lamps by the door, on short iron posts
         for (const s of [-1, 1]) {
           const gx = dx + tx * s * 1.6 + n[0] * 0.6, gz = dz + tz * s * 1.6 + n[1] * 0.6;

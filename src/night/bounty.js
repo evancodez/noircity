@@ -323,7 +323,8 @@ export class Bounty {
     if (!goal) {
       // close: straight to me (the trail behind him forgotten); in my face: a step back
       if (d < 5) T.length = 0;
-      if (d < 1.2) {
+      if (d < 1.2) M.back = true; else if (d > 1.9) M.back = false;
+      if (M.back) {
         const a = Math.atan2(c.pos.x - me.x, c.pos.z - me.z), sp = 1.1;
         const q = _v.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt);
         G.stage.colliders.resolve(q, 0.35, col); put(q);
