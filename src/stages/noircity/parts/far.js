@@ -85,13 +85,19 @@ export default {
       const lights = [];
       const tint = (geos, v) => { for (const g0 of geos || []) { const g = g0.index ? g0.toNonIndexed() : g0; const n = g.getAttribute('position').count; g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(n * 3).fill(v), 3)); lights.push(g); } };
       tint(T.out.lit, LIT); tint(T.out.shop, SHOP);
+      const lamp0 = lights.length;
       tint(T.lamps.map((l) => {
         _q.setFromAxisAngle(_y, l.yaw);
         _m.compose(new THREE.Vector3(l.x, 0.15, l.z), _q, _s);
         return placeLamp(LAMP.bulb, l);   // [O1b] (the lamp's own style's mouth)
       }), BULB);
       if (lights.length) {
+        // ([O6] each lamp's mouth in the merge: a lamp put out goes dark there - its colour range)
+        const ranges = [];
+        let o = 0;
+        for (let i = 0; i < lights.length; i++) { const n = lights[i].getAttribute('position').count; if (i >= lamp0) ranges.push({ owner: T.lamps[i - lamp0], start: o, count: n, attr: 'color' }); o += n; }
         const m = new THREE.Mesh(mergeLit(lights), lightMat);
+        m.userData.ranges = ranges;
         m.userData.inkId = ids + 2; m.userData.noRay = true;
         group.add(m); meshes.push(m);
       }

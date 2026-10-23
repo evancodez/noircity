@@ -73,21 +73,26 @@ export default {
     const doorsAt = new Map();   // [O1b] chunk key (where the door stands) -> Set(door)
     const stats = { built: 0, dropped: 0, buildMs: 0, live: 0, lastMs: 0 };
 
+    // [O6] what breaks (stage.props.smash): each prop's and each lamp's ranges
+    // in its chunk's merged meshes are recorded, so the one that goes over
+    // can leave the merge (smash.chunkIn / chunkOut)
+    // (the set is built after this part: stage.smash, read when a chunk is built)
+    const sm = () => stage.smash || null;
     // a chunk's build, a lot a step
     function* buildChunk(key) {
       const D = index.get(key) || { lots: [], paves: [], lamps: [], props: [] };
-      const out0 = {};
-      const push = (k, g) => (out0[k] || (out0[k] = [])).push(g);
+      const out0 = {}, own0 = {};
+      const push = (k, g, owner = null) => { const L = out0[k] || (out0[k] = []); L.push(g); if (owner) (own0[k] || (own0[k] = []))[L.length - 1] = owner; };   // ([O6] the owner at its index: the kits push into out0 too)
       for (const p of D.paves) {
         push('pave', paveGeo(p.pts));
         for (const g of kerbGeos(p.pts, p.kerbSides)) push('kerb', g);
       }
       yield;
       for (const L of D.lots) { nearLot(L, out0); yield; }
-      for (const l of D.lamps) { push('iron', placeLamp(LAMP.iron, l)); push('shade', placeLamp(LAMP.shade, l)); }
+      for (const l of D.lamps) { push('iron', placeLamp(LAMP.iron, l), l); push('shade', placeLamp(LAMP.shade, l), l); }
       for (const p of D.props) {
-        if (p.kind === 'namesign') { const B = nameBlades(p, names); for (const g of B.faces) push('signs', g); for (const g of B.iron) push('iron', g); continue; }
-        push(p.road || p.kind === 'pole' ? 'iron' : p.kind === 'bench' || p.kind === 'stall' ? 'tree' : 'prop', placeProp(p.kind, p));
+        if (p.kind === 'namesign') { const B = nameBlades(p, names); for (const g of B.faces) push('signs', g, p); for (const g of B.iron) push('iron', g, p); continue; }
+        push(p.road || p.kind === 'pole' ? 'iron' : p.kind === 'bench' || p.kind === 'stall' ? 'tree' : 'prop', placeProp(p.kind, p), p.road ? null : p);
       }
       // the laundry lines: the line sagging between the walls, the washing pegged on it
       for (const l of D.lines || []) {
@@ -107,13 +112,25 @@ export default {
         }
       }
       yield;
-      const out = {};
-      for (const [b, list] of Object.entries(out0)) { const f = FOLD[b]; if (!f) continue; (out[f] || (out[f] = [])).push(...list); }
+      const out = {}, own = {};
+      for (const [b, list] of Object.entries(out0)) { const f = FOLD[b]; if (!f) continue; (out[f] || (out[f] = [])).push(...list); const O0 = own0[b] || [], Of = own[f] || (own[f] = []); for (let i = 0; i < list.length; i++) Of.push(O0[i] || null); }
       const meshes = [];
       let k = 0;
       for (const [b, list] of Object.entries(out)) {
         if (!list.length || !MATS[b]) continue;
+        // ([O6] each owner's vertices in the merge: the merges lay the lists end to end, unindexed)
+        let ranges = null;
+        if (sm()) {
+          let o = 0;
+          const O = own[b];
+          for (let i = 0; i < list.length; i++) {
+            const g = list[i], n = g.index ? g.index.count : g.getAttribute('position').count;
+            if (O[i]) (ranges || (ranges = [])).push({ owner: O[i], start: o, count: n });
+            o += n;
+          }
+        }
         const m = new THREE.Mesh(b === 'signs' ? mergeUV(list) : yield* mergeSteps(list), MATS[b]);   // [O1b] (merged over steps: one bucket was 9 ms in one)
+        if (ranges) { m.userData.ranges = ranges; m.userData.prop = 'merged'; }
         for (const g of list) g.dispose();
         m.userData.inkId = city.idFor(key, k++);
         m.receiveShadow = true;
@@ -128,6 +145,8 @@ export default {
       return meshes;
     }
     function attach(key, meshes) {
+      // ([O6] what is out of its merge already is taken out of the new build, before the bullets' world reads it)
+      if (sm()) sm().chunkIn(key, meshes);
       for (const m of meshes) { group.add(m); if (!m.userData.noRay && stage.rays) stage.addSolid(m); }
       // the chunk's doors (every street door of its lots: shut now, they
       // rattle; O5 opens the places' - city:door)
@@ -143,6 +162,7 @@ export default {
       const ch = loaded.get(key);
       if (!ch) return;
       for (const d of ch.doors) { const S = doorsAt.get(d.at); if (S) { S.delete(d); if (!S.size) doorsAt.delete(d.at); } }   // [O1b]
+      if (sm()) sm().chunkOut(key, ch.meshes);   // [O6]
       for (const m of ch.meshes) {
         group.remove(m);
         if (!m.userData.noRay && stage.rays) stage.removeSolid(m);

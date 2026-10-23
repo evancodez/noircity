@@ -1,0 +1,15 @@
+{
+ "about": "[O6] Shoot every kind (brief O6 §4): on foot at the bed with the Tommy gun, the mouse onto each kind by trusted moves and LMB bursts (tools/lib/o6_smash.mjs shoot): a lamp's head (out), a hydrant (a fan of water), a newsstand (papers), a stall (its goods, then over), crates (splinters, then to pieces), a call box (its glass), a bin (knocked over), a bench (splinters), a tram stop's sign and a street-name post (bent over), a fence panel (down), the shop glass (holes, then gone), an awning (torn, its water, then down), the sedan (a tyre, a lamp, its glass). node tools/play.mjs tools/plays/o6_shoot.json",
+ "url": "/?mute=1&start=smash",
+ "size": [1280, 800],
+ "out": "shots/o6/shoot",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 1500 },
+  { "drive": "tools/lib/o6_smash.mjs", "mode": "shoot",
+    "check": "['lamp','hydrant','newsstand','stall','crate','callbox','bin','bench','stop','fence','awning','namesign'].every((k) => D.res[k] && D.res[k].ev && D.res[k].ev.length > 0) && D.changed.lamp > 0 && D.changed.crate > 0 && D.changed.bin > 0 && D.changed.fence > 0 && D.changed.awning > 0 && D.changed.glass > 0 && D.sedan && (D.sedan.tyres.some((x) => x) || D.sedan.damage > 0)",
+    "label": "every kind answers a round (and the light ones go over)" }
+ ]
+}

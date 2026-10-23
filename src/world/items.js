@@ -81,16 +81,25 @@ export function newsOf(G) {
   if (G.news) return G.news;
   const N = G.news = {
     lines: [],
-    // a line of what happened (the police's events, the city's): the newest is the headline
-    say(line, where = null) {
+    // a line of what happened (the police's events, the activities', the
+    // city's): THINGS_TO_DO §10 - the worst thing of the last ten minutes is
+    // the headline (weight: a death 3, a car burning 2, shots or a wild car
+    // 1), ties the newest; nothing: the night's own line
+    say(line, weight = 1, where = null) {
       if (!line) return;
+      if (weight && typeof weight === 'object') { where = weight; weight = 1; }
       const L = String(line).toUpperCase().slice(0, 48);
       if (this.lines.length && this.lines[this.lines.length - 1].line === L) return;
-      this.lines.push({ line: L, where, t: G.time || 0 });
+      this.lines.push({ line: L, weight, where, t: G.time || 0 });
       if (this.lines.length > 20) this.lines.shift();
-      G.emit('news', { line: L, where });
+      G.emit('news', { line: L, weight, where });
     },
-    latest() { return this.lines.length ? this.lines[this.lines.length - 1].line : NIGHT[Math.floor((G.time || 0) / 240) % NIGHT.length]; },
+    latest() {
+      const now = G.time || 0;
+      let best = null;
+      for (const l of this.lines) if (now - l.t < 600 && (!best || l.weight >= best.weight)) best = l;
+      return best ? best.line : NIGHT[Math.floor(now / 240) % NIGHT.length];
+    },
     night: NIGHT,
   };
   return N;

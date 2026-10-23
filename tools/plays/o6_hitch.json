@@ -1,0 +1,16 @@
+{
+ "about": "[O6 after the critic, major 5] The car blast's frame (the bed's hundred beat, ?all: a hundred things over round the sedan, then its blast): the frame times (rAF) from a second before the wreck to a second after. The first blast was a 100 ms frame (the wreck's shell built in its frame, its programs and the pools' first drawn there); now the wreck, its materials, the glass's and every pool are made and drawn at nothing in the first steps. The machine is shared: a frame after is held to the worst of the second before, or 50 ms. node tools/play.mjs tools/plays/o6_hitch.json",
+ "url": "/?mute=1&start=smash.hundred&all=2.5",
+ "size": [1280, 800],
+ "out": "shots/o6/hitch",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "!!(G.stage && G.stage.smash && G.city && G.city.cars && G.scenes.current && G.scenes.current.id === 'smash')", "timeout": 30000 },
+  { "eval": "(() => { const W = window.__ft = { d: [] }; let last = null; const t = (now) => { if (last != null) W.d.push([+(now - last).toFixed(1), G.city.cars.some((c) => c.wrecked) ? 1 : 0]); last = now; if (W.d.length < 900) requestAnimationFrame(t); }; requestAnimationFrame(t); return 1; })()" },
+  { "until": "G.city.cars[2].wrecked", "timeout": 15000 },
+  { "wait": 1500 },
+  { "eval": "(() => { const W = window.__ft, i = W.d.findIndex((x) => x[1]); const pre = W.d.slice(Math.max(0, i - 60), i).map((x) => x[0]), post = W.d.slice(i, i + 60).map((x) => x[0]); window.__h = { pre: Math.max(...pre), post: Math.max(...post), around: W.d.slice(Math.max(0, i - 4), i + 8).map((x) => x[0]) }; return JSON.stringify(window.__h); })()" },
+  { "expect": "window.__h.post <= Math.max(50, window.__h.pre)", "label": "no frame of the blast's second longer than the worst of the second before (or 50 ms)" }
+ ]
+}

@@ -92,15 +92,15 @@ export default {
       G.on('hood:down', (e) => {
         const h = e && e.hood;
         if (!h || !h.pos || G.stage !== stage) return;
-        N.say(`MAN SHOT DEAD ON ${streetName(h.pos.x, h.pos.z)}`, { x: h.pos.x, z: h.pos.z });
+        N.say(`MAN SHOT DEAD ON ${streetName(h.pos.x, h.pos.z)}`, 3, { x: h.pos.x, z: h.pos.z });
         // his gun lies where he fell
         const gun = h.gunKind === 'tommy' || h.gunKind === 'rusher' ? 'tommy' : 'revolver';
         const d = e.dir || null;
         api.drop('weapon', h.pos.x + (d ? d.x * 0.6 : 0.4), h.pos.z + (d ? d.z * 0.6 : 0.2), { gun });
       });
-      G.on('car:exploded', (e) => { if (e && e.at && G.stage === stage) N.say(`CAR BURNS ON ${streetName(e.at.x, e.at.z)}`, { x: e.at.x, z: e.at.z }); });
-      G.on('shot', () => { if (G.stage !== stage) return; const last = N.lines[N.lines.length - 1]; if (last && G.time - last.t < 45) return; N.say(`SHOTS FIRED ON ${streetName(G.eye.x, G.eye.z)}`, { x: G.eye.x, z: G.eye.z }); });
-      G.on('smash', (e) => { if (!e || !e.pos || e.by !== 'car' || G.stage !== stage) return; const last = N.lines[N.lines.length - 1]; if (last && G.time - last.t < 30) return; N.say(`CAR RUNS WILD ON ${streetName(e.pos.x, e.pos.z)}`, { x: e.pos.x, z: e.pos.z }); });
+      G.on('car:exploded', (e) => { if (e && e.at && G.stage === stage) N.say(`CAR BURNS ON ${streetName(e.at.x, e.at.z)}`, 2, { x: e.at.x, z: e.at.z }); });
+      G.on('shot', () => { if (G.stage !== stage) return; const last = N.lines[N.lines.length - 1]; if (last && G.time - last.t < 45) return; N.say(`SHOTS FIRED ON ${streetName(G.eye.x, G.eye.z)}`, 1, { x: G.eye.x, z: G.eye.z }); });
+      G.on('smash', (e) => { if (!e || !e.pos || e.by !== 'car' || G.stage !== stage) return; const last = N.lines[N.lines.length - 1]; if (last && G.time - last.t < 30) return; N.say(`CAR RUNS WILD ON ${streetName(e.pos.x, e.pos.z)}`, 1, { x: e.pos.x, z: e.pos.z }); });
       G.on('city:in', (e) => api.glovebox(e && e.car));
     };
     const api = {

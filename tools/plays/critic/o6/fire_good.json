@@ -1,0 +1,12 @@
+{
+ "about": "[O6 critic] the fire beat (?start=smash.fire), good hands: E into the burning coupe, out after 700 ms (null: never), walk (run: true); up to 1 tries.",
+ "url": "/?mute=1&start=smash.fire",
+ "size": [1280, 800],
+ "out": "shots/critic_o6/fire_good",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 4, "every": 3500 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "drive": "tools/plays/critic/o6/poke.mjs", "mode": "firebeat", "leave": 700, "run": true, "tries": 1 }
+ ]
+}

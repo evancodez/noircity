@@ -1,0 +1,30 @@
+{
+ "about": "[O6 after the critic, blocker 2] A burning car on foot, fair: the bed's burn beat (the sedan across the road burning, its fuse running). IDLE: walk up to it and stand: `She’s going up. Get back.` before the blast, `Too hot. Get back.` in the wreck's fire (never the gun kit's 'Get to cover.'), and the fail names what did it (`Burnt. Keep off the fire.`). GOOD (the page again): walk up, and at the warning turn and walk off: the car goes, I stand. node tools/play.mjs tools/plays/o6_fire_foot.json",
+ "url": "/?mute=1&start=smash.burn",
+ "size": [1280, 800],
+ "out": "shots/o6/firefoot",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(() => { const F = window.__lines = []; const t = () => { const w = G.hud.kit.warnText || null, l = G.hud.kit.lowText || null; for (const x of [w, l]) if (x && !F.includes(x)) F.push(x); if (!window.__stop) requestAnimationFrame(t); }; requestAnimationFrame(t); return 1; })()" },
+  { "walk": "(() => { const c = G.city.cars[2]; return [[c.pos.x + c.fwd.x * 0.2 + 2.2, c.pos.z + c.fwd.z * 0.2 + 1.0]]; })()", "timeout": 9000, "stop": false },
+  { "expect": "G.hud.kit.warnText === 'She’s going up. Get back.' && G.city.cars[2].smashD.state === 'burning'", "label": "idle: on foot by a car that burns, told before the blast" },
+  { "until": "!!G.failing", "timeout": 20000 },
+  { "expect": "G.lastFail && G.lastFail.why === 'Burnt. Keep off the fire.' && G.lastFail.warnedFor >= 1", "label": "idle: the fail names the fire that did it, warned before it" },
+  { "expect": "window.__lines.includes('Too hot. Get back.') && !window.__lines.some((x) => /cover/i.test(x))", "label": "idle: in the fire the line is its fix, never 'Get to cover.'" },
+  { "eval": "JSON.stringify({ lines: window.__lines, lf: G.lastFail })" },
+  { "reload": true },
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "walk": "(() => { const c = G.city.cars[2]; return [[c.pos.x + c.fwd.x * 0.2 + 2.2, c.pos.z + c.fwd.z * 0.2 + 1.0]]; })()", "timeout": 9000, "stop": false },
+  { "until": "G.hud.kit.warnText === 'She’s going up. Get back.'", "timeout": 3000 },
+  { "wait": 500 },
+  { "walk": [[-111.5, 2.0]], "timeout": 9000, "stop": false },
+  { "until": "G.city.cars[2].wrecked", "timeout": 10000 },
+  { "wait": 2500 },
+  { "expect": "!G.failing && !G.lastFail && G.health.hp > 60", "label": "good: off at the warning - the car goes, I stand" },
+  { "eval": "JSON.stringify({ hp: G.health.hp, d: +Math.hypot(G.camera.position.x - G.city.cars[2].pos.x, G.camera.position.z - G.city.cars[2].pos.z).toFixed(1) })" }
+ ]
+}
