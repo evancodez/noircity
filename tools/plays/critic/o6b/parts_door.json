@@ -1,0 +1,24 @@
+{
+ "about": "[O6b critic] the door lying (&ten=parts): what it is (its box, its lean), a look at it from 2 m, then walk across it east-west and north-south: does it stop me?",
+ "url": "/?mute=1&start=smash.ten&ten=parts",
+ "size": [1440, 900],
+ "out": "shots/critic_o6b/door",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 3500 },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); const b=d.body; return JSON.stringify({p:[b.p.x,b.p.y,b.p.z].map(v=>+v.toFixed(2)), e:[b.e.x,b.e.y,b.e.z].map(v=>+v.toFixed(2)), q:[d.Q.x,d.Q.y,d.Q.z,d.Q.w].map(v=>+v.toFixed(2)), lie:!!d.lie, lieBox: d.lie ? {hx:d.lie.hx, hz:d.lie.hz, cx:d.lie.cx, cz:d.lie.cz, tag:d.lie.tag, y1:d.lie.y1, top:d.lie.top} : null, pitch:+N.controller.pitch.toFixed(2)}); })()" },
+  { "walk": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return [[d.body.p.x, d.body.p.z + 4.5], [d.body.p.x, d.body.p.z + 2.6]]; })()", "timeout": 12000 },
+  { "look": [0, 160], "steps": 4 },
+  { "eval": "JSON.stringify({pitch:+N.controller.pitch.toFixed(2), yaw:+N.controller.yaw.toFixed(2)})" },
+  { "wait": 400 },
+  { "shot": "d1_look" },
+  { "name": "north across it", "walk": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return [[d.body.p.x, d.body.p.z - 2.5]]; })()", "into": true, "timeout": 6000 },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.y,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), st:d.state}); })()" },
+  { "name": "east-west across it", "walk": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return [[d.body.p.x + 2.5, d.body.p.z + 0.1], [d.body.p.x - 2.5, d.body.p.z + 0.1]]; })()", "into": true, "timeout": 9000 },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='cardoor'); return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.y,N.controller.pos.z].map(v=>+v.toFixed(2)), door:[d.body.p.x,d.body.p.y,d.body.p.z].map(v=>+v.toFixed(2)), st:d.state}); })()" },
+  { "name": "the bonnet: walk across it", "walk": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='carbonnet'); return [[d.body.p.x, d.body.p.z + 3], [d.body.p.x, d.body.p.z - 3]]; })()", "into": true, "timeout": 9000 },
+  { "eval": "(() => { const d = G.stage.smash.out.find(i=>i.part && i.kind==='carbonnet'); const b=d.body; return JSON.stringify({me:[N.controller.pos.x,N.controller.pos.y,N.controller.pos.z].map(v=>+v.toFixed(2)), p:[b.p.x,b.p.y,b.p.z].map(v=>+v.toFixed(2)), e:[b.e.x,b.e.y,b.e.z].map(v=>+v.toFixed(2)), st:d.state}); })()" }
+ ]
+}

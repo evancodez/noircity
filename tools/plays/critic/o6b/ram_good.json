@@ -1,0 +1,24 @@
+{
+ "about": "[O6b critic] the havoc, good hands (my own bot): a long run-up down the lane under the el and a diagonal into the door of three east sedans at speed, twice each; then out and a look at one from the pavement.",
+ "url": "/?mute=1&start=smash.ten",
+ "size": [1440, 900],
+ "out": "shots/critic_o6b/good",
+ "steps": [
+  { "wait": 2000 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11", "timeout": 30000 },
+  { "wait": 1000 },
+  { "key": "KeyE", "hold": 80 },
+  { "until": "G.city.inCar", "timeout": 3000 },
+  { "wait": 800 },
+  { "drive": "tools/plays/critic/o6b/ram_bot.mjs", "profile": "good", "v": 16, "runup": 22, "order": [3, 4, 6], "hits": 2, "timeout": 200000, "shotEvery": [1], "check": "true" },
+  { "eval": "(() => { const c=G.city.car; return JSON.stringify({v:c.speed, st:c.smashD.state, dmg:c.damage}); })()" },
+  { "key": "KeyE", "hold": 80 },
+  { "wait": 1200 },
+  { "walk": [[-118.5, 21], [-118.2, 26.4], [-116.6, 26.4]], "timeout": 12000 },
+  { "look": [0, 120], "steps": 4 },
+  { "wait": 500 },
+  { "shot": "look_car4" },
+  { "eval": "(() => { const S = G.stage.smash; const P = S.out.filter((i) => i.part); const k = {}; let live = 0; for (const it of P) { k[it.kind] = (k[it.kind]||0)+1; if (it.state==='live') live++; } return JSON.stringify({ parts: k, live, cars: G.city.cars.map((c,i)=>[i, +c.damage.toFixed(2), c.smashD&&c.smashD.state]), me:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), inCar:G.city.inCar }); })()" }
+ ]
+}

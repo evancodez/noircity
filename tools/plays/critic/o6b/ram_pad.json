@@ -1,0 +1,84 @@
+{
+ "about": "[O6b critic] the havoc by the pad alone (?padfake=1): the same hands as ram_medium on the pad (E, the pedals, the steer), two cars, twice each; then out (E on the pad).",
+ "url": "/?mute=1&padfake=1&start=smash.ten",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/critic_o6b/pad",
+ "steps": [
+  {
+   "until": "G.state === 'title' && N.hud.titleShown",
+   "timeout": 40000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "wait": 400
+  },
+  {
+   "pad": {
+    "b": [
+     "x"
+    ],
+    "secs": 0.12
+   }
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'smash' && G.scenes.fadeK < 0.05 && G.city.cars.length >= 11",
+   "timeout": 45000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 3000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/plays/critic/o6b/ram_bot.mjs",
+   "profile": "medium",
+   "order": [
+    3,
+    1
+   ],
+   "hits": 2,
+   "timeout": 120000,
+   "shotEvery": [],
+   "check": "true"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "shot": "after"
+  },
+  {
+   "eval": "(() => { const S = G.stage.smash; const P = S.out.filter((i) => i.part); const k = {}; let live = 0; for (const it of P) { k[it.kind] = (k[it.kind]||0)+1; if (it.state==='live') live++; } return JSON.stringify({ parts: k, live, cars: G.city.cars.map((c,i)=>[i, +c.damage.toFixed(2), c.smashD&&c.smashD.state]), me:[G.controller.pos.x,G.controller.pos.z].map(v=>+v.toFixed(1)), inCar:G.city.inCar, hp:G.health.hp, t:[...document.querySelectorAll('body *')].filter(e=>e.offsetParent&&e.children.length===0&&e.innerText&&e.innerText.trim()).map(e=>e.innerText.trim().slice(0,50)).join(' | ') }); })()"
+  }
+ ],
+ "input": "pad"
+}
