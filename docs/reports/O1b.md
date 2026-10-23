@@ -194,6 +194,8 @@ seat's ten on 4378828)
   none over 2 %; every unique from the road at most 1.99 %, at arm's length at
   most 1.25 %.
 - **The neon atlas**: 3,755 of 4,096 px (542 accent blades, 582 blades in all).
+- **The build**: `npx vite build` passes. `main` merged again at the end (one
+  commit, O4's seams into three briefs: docs only).
 - **Frames per second** against `shot=perf` at the same moments
   (`MOMENTS=city node tools/fpstable.mjs 5`, once, at load 45-60, the GPU 100 %
   busy before each): Grand Ave from the car **1.09 x** (652 draws, 2.56 M
