@@ -368,18 +368,23 @@ async function raceOnce(P, { js, sleep, log, shot }, H) {
   log(`race: ${JSON.stringify(site)}`);
   // (the corner set: its cars and its flag there)
   for (let i = 0; i < 100; i++) { if ((await js('G.wheels.race.cars.length')) > 0) break; await sleep(100); }
-  // to the line: creep up to it and stop
-  for (let i = 0; i < 200; i++) {
+  // to the line: creep up till near it (22 m), stop, and the line comes (E  race them)
+  const L = await js(`(() => { const R = G.wheels.race, p = R.path.at(R.s0, {}); return [p.x, p.z]; })()`);
+  for (let i = 0; i < 400; i++) {
     const s = await P.state();
-    const r = await js('({ shown: !!G.wheels.race.shown, state: G.wheels.race.state, cars: G.wheels.race.cars.length })');
+    const r = await js('({ shown: !!G.wheels.race.shown, cars: G.wheels.race.cars.length })');
     if (r.shown) break;
-    await P.set('KeyW', r.cars > 0 && Math.abs(s.car.v) < 3);
+    const near = Math.hypot(s.car.x - L[0], s.car.z - L[1]) < 22;
+    await P.set('KeyW', !near && r.cars > 0 && Math.abs(s.car.v) < 3);
+    await P.set('KeyS', near && s.car.v > 0.3);
     await sleep(60);
-    if (i > 10 && Math.abs(s.car.v) < 0.1 && !P.held.has('KeyW')) break;
   }
   await P.stop();
-  await sleep(300);
-  const pr = (await P.state()).prompt;
+  let pr = '';
+  for (let i = 0; i < 40 && !pr; i++) { pr = (await P.state()).prompt; if (!pr) await sleep(75); }
+  // (no line, no race: not E - that would be out of the car)
+  if (!pr) return { hands: H.name, err: 'no line', at: (await P.state()).car };
+  const races0 = await js('G.wheels.race.stats.races');
   await P.tap('KeyE');
   if (P.opts.strip && shot) { for (let k = 0; k < P.opts.strip; k++) { await sleep(420); await shot('strip_' + k); } }
   for (let i = 0; i < 100; i++) { const r = await js('G.wheels.race.state'); if (r === 'run') break; await sleep(60); }
@@ -398,6 +403,7 @@ async function raceOnce(P, { js, sleep, log, shot }, H) {
   }
   await sleep(400);
   for (let i = 0; i < 100; i++) { if ((await js('G.wheels.race.state')) !== 'run') break; await sleep(100); }
+  if ((await js('G.wheels.race.stats.races')) === races0) return { hands: H.name, err: 'no race', prompt: pr };
   const res = await js('({ result: G.wheels.race.result, stats: { ...G.wheels.race.stats }, money: G.save.money, others: G.wheels.race.cars.map((c) => +c.s.toFixed(0)), paces: G.wheels.race.cars.map((c) => c.pace), mine: +G.wheels.race.mine.s.toFixed(0), crashes: G.city.car && G.city.car.stats.crashes, damage: G.city.car && +G.city.car.damage.toFixed(2) })');
   return { hands: H.name, prompt: pr, ...res, secs: (Date.now() - T0) / 1000 };
 }
