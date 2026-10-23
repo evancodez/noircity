@@ -40,7 +40,8 @@ export default async function drive(ctx) {
       await keyUp('KeyW');
     }
     // the fight: O4's bot plays it at the profile's pace (idle: nothing)
-    for (let i = 0; i < 60 && !s.act && !s.failing; i++) { await sleep(200); s = await st(); }
+    for (let i = 0; i < 125 && !s.act && !s.failing; i++) { await sleep(200); s = await st(); }
+    if (!s.act && !s.failing) { out.tries.push({ result: 'none:' + s.mode, secs: +((Date.now() - t0) / 1000).toFixed(1), why: 'no fight began' }); log('o7_bounty: no fight began (' + s.mode + ', ' + (s.d && s.d.toFixed(1)) + ' m)'); break; }
     const B = await brawl({ ...ctx, opts: { profile: prof, beat: s.beat, tries: 1, wins: 1, timeout: Math.max(30000, timeout - (Date.now() - T0)) } });
     s = await st();
     let result = null, why = null;

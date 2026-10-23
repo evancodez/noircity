@@ -36,7 +36,7 @@ const FIRST = ['Sal', 'Vito', 'Eddie', 'Lou', 'Frankie', 'Mickey', 'Nate', 'Joey
 const LAST = ['Moretti', 'Kane', 'Doyle', 'Russo', 'Malloy', 'Brandt', 'Costa', 'Quinn', 'Falco', 'Ricci', 'Shea', 'Varga'];
 const NICK = ['the Knife', 'Two-Bits', 'the Ox', 'Lucky', 'the Priest', 'Spats', 'the Weasel', 'Blue'];
 const TURF = ['docks', 'tenements'];
-const _v = new THREE.Vector3(), _dir = new THREE.Vector3();
+const _v = new THREE.Vector3(), _dir = new THREE.Vector3(), _ray = new THREE.Vector3();
 
 export class Bounty {
   constructor(night) {
@@ -149,7 +149,13 @@ export class Bounty {
     M.t += dt;
     const p = M.pos, d = Math.hypot(e.x - p.x, e.z - p.z);
     const onFoot = !(R && R.inCar) && !(R && R.places && R.places.inside);
-    const clear = () => { const g = this.night.graph(); return !g || g.lineOfSight(p.x, p.z, e.x, e.z) !== false; };
+    // (nothing between us: the graph's 2D test - or, where it says no (a man on a lot's corner), the eye's own ray to his head)
+    const clear = () => {
+      const g = this.night.graph();
+      if (!g || g.lineOfSight(p.x, p.z, e.x, e.z) !== false) return true;
+      const to = _ray.set(p.x - e.x, (p.y || 0) + 1.6 - e.y, p.z - e.z), L = to.length();
+      return L < 0.5 || !G.rays.raycast(e.clone(), to.normalize(), L - 0.4);
+    };
     if (M.mode === 'gun') {
       const h = M.h;
       if (!h || !h.alive) { if (h && !M.removed) this.dead(M); return; }
@@ -177,11 +183,15 @@ export class Bounty {
       this.face(M.c, Math.atan2(e.x - p.x, e.z - p.z), dt);
       if (!onFoot || d > BOUNTY.watch + 4) { if (M.t > 6) this.back(M); return; }
       if (M.mode === 'turn' && M.t < 1.3) return;
-      if (d < 2.8 && !F.active && !G.failing) { this.fight(M); return; }
+      // (close enough: the crowd brawl's own feet bring him in - and never left stuck on a post or a
+      // corner walking at me: after 6 s of it, within 12 m, the fight begins where he stands)
+      if ((d < 4.5 || (M.mode === 'come' && M.t > 7.3 && d < 12)) && !F.active && !G.failing) { this.fight(M); return; }
       if (M.mode !== 'come') { M.mode = 'come'; try { M.c.setState('walk', 0.25); } catch (err) { /* */ } }
       const sp = 1.7, x0 = p.x, z0 = p.z, a = Math.atan2(e.x - p.x, e.z - p.z);
       const q = _v.set(x0 + Math.sin(a) * sp * dt, 0, z0 + Math.cos(a) * sp * dt);
       G.stage.colliders.resolve(q, 0.35, M.c.fig && M.c.fig.collider);
+      // (a post in his way: a step to his side round it)
+      if (Math.hypot(q.x - x0, q.z - z0) < sp * dt * 0.3) { const sa = a + (M.b.seed % 2 ? 1.3 : -1.3); q.set(x0 + Math.sin(sa) * sp * dt, 0, z0 + Math.cos(sa) * sp * dt); G.stage.colliders.resolve(q, 0.35, M.c.fig && M.c.fig.collider); }
       M.c.pos.x = q.x; M.c.pos.z = q.z; if (M.c.object) { M.c.object.position.x = q.x; M.c.object.position.z = q.z; }
       M.c.speed = sp;
     }
