@@ -890,11 +890,12 @@ export class People {
           // or a wild one over 60 km/h, takes him by surprise)
           const wild = v === this.G.vehicles.player || sp > 16.5;
           if (!wild) rt = Math.min(rt, 0.3);
-          p.carSeen = { v, t: now, rt, freeze: wild && Math.random() < (risky ? 0.5 : 0.08) };
+          p.carSeen = { v, t: now, rt, wild, freeze: wild && Math.random() < (risky ? 0.5 : 0.08) };
           continue;
         }
         if (now - S.t < S.rt) continue;
-        if (S.freeze || tHit < 0.3) {
+        // (late for a car driven at him: the arms up; a traffic car brushing past: he steps back clear)
+        if (S.freeze || (tHit < 0.3 && S.wild)) {
           if (p.role === 'walker' && p.mode !== 'cower') { p.cower(v.pos, 1.4); if (Math.random() < 0.6) p.say('o3_cry', { f0: 200 + Math.random() * 60 }); this.stats.froze = (this.stats.froze || 0) + 1; }
           continue;
         }
