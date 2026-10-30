@@ -168,7 +168,7 @@ async function punch(api) {
       await sleep(600);
       if (opts.shots && k === 0) await shot('station');
       T.after = await state(js);
-      T.ok = warned && failed && back && T.fail && T.fail.why === 'Arrested.' && T.fail.warnedFor >= 1 && T.after.beat === 'station' && T.after.heat === 0 && T.after.gun === false && T.backIn < 10;
+      T.ok = warned && failed && back && T.fail && T.fail.why === 'Arrested.' && T.fail.warnedFor >= 1 && T.after.beat === 'station' && T.after.heat === 0 && T.backIn < 10;   // [O8, after main's rule: the arrest keeps every gun I carry - the old 'gun === false' dropped]
     } else if (opts.then === 'run') {
       // he comes; I turn from him and run (Shift) down the street and round the first corner
       await waitFor(js, `window.__o3c && window.__o3c.pos.distanceTo(G.eye) < ${opts.runAt ?? 12}`, 30000);

@@ -1,6 +1,6 @@
 {
- "about": "[O8 after the critic] eight men stood ahead of my car (1.7 s of its way, or 0.8 s: a man stepping out late) in the city, one every 2.7 s, W held (35 to 90 km/h), every other one with his back to it: who clears, who freezes, who is hit; no body carried on the bumper",
- "url": "/?mute=1&start=city",
+ "about": "[O8 after the critic] eight men stood ahead of my car (1.7 s of its way, or 0.8 s: a man stepping out late) in the city, one every 2.7 s, W held (35 to 90 km/h), every other one with his back to it: who clears, who freezes, who is hit; no body carried on the bumper; after O2's merge: no moving traffic (notraffic=1) and the kerb ahead cleared of parked cars, so the run is about the men",
+ "url": "/?mute=1&notraffic=1&start=city",
  "size": [
   1280,
   800
@@ -34,6 +34,10 @@
   },
   {
    "wait": 800
+  },
+  {
+   "eval": "(() => { const c = G.city.car, Pk = G.wheels.parked, fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw); let n = 0; for (const r of Pk.recs) { const dx = r.x - c.pos.x, dz = r.z - c.pos.z, al = dx * fx + dz * fz, lat = Math.abs(dx * fz - dz * fx); if (al > 0 && al < 600 && lat < 3.6) { r.gone = true; n++; if (r.body) { const k = Pk.bodies.indexOf(r.body); if (k >= 0) Pk.bodies.splice(k, 1); r.body = null; Pk.dirty = true; } } } return n; })()",
+   "label": "the bed: the parked cars in my line ahead taken away (after O2's merge a taxi parked 66 m on stopped the run)"
   },
   {
    "down": "KeyW"
