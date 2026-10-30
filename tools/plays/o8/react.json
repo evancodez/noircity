@@ -1,0 +1,22 @@
+{
+ "about": "[O8] the latency of a reaction (by real input): six people of the street round me on Grand Ave, the gun drawn (the mouse wheel: O7's draw) - the time from the input to the first man's start (the jolt through him, his run), and how many run; then a shot (LMB) and they scatter. node tools/play.mjs tools/plays/o8/react.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o8/play_react",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people", "timeout": 30000 },
+  { "wait": 1200 },
+  { "eval": "(() => { const P = G.people, C = G.controller; P.dbgClear(); C.setPose(-108.6, 20, 0, 0.1); window.__o8 = []; for (const [x, z] of [[-108.4, 13], [-107.2, 10], [-109.5, 15.5], [-108.0, 6], [-109.4, 23.5], [-107.6, 25.5]]) { const p = P.dbgWalker(x, z, Math.PI); window.__o8.push(p); } window.__o8t = null; window.__o8iv = setInterval(() => { if (window.__o8t == null && window.__o8.some((p) => p.mode === 'flee')) window.__o8t = performance.now(); }, 2); return window.__o8.length; })()" },
+  { "wait": 1500 },
+  { "eval": "(window.__o8in = performance.now(), 1)" },
+  { "drive": "tools/lib/o4_wheel.mjs", "dy": 100 },
+  { "wait": 1500 },
+  { "eval": "JSON.stringify({ ms: window.__o8t != null ? +(window.__o8t - window.__o8in).toFixed(1) : null, flee: window.__o8.filter((p) => p.mode === 'flee').length, modes: window.__o8.map((p) => p.mode), gun: G.player.weapons.current, menace: G.crime.log.filter((r) => r.kind === 'menace').length, log: G.crime.log.slice(-6).map((r) => r.kind + '@' + (r.t != null ? r.t.toFixed(1) : '')), after: window.__o8.map((p) => !!p.after) })" },
+  { "expect": "window.__o8t != null && window.__o8t - window.__o8in < 200 && window.__o8.filter((p) => p.mode === 'flee').length >= 4", "label": "the gun drawn: the first man starts within 0.2 s of the input, four or more run" },
+  { "shot": "r1_run" },
+  { "eval": "(clearInterval(window.__o8iv), 1)" },
+  { "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()", "label": "no errors in #errlog" }
+ ]
+}

@@ -1,0 +1,27 @@
+{
+ "about": "[O8] memory flat over ten minutes (the bed's falls, ?start=cast.falls: four men fall every nine seconds and are made again - about 270 ragdolls, the pool's figures used again): the heap after a collection, the GPU's geometries and textures, at 1, 3, 5, 7, 9 and 10.5 minutes - flat from the third minute on. node tools/play.mjs tools/plays/o8/soak.json",
+ "url": "/?mute=1&start=cast.falls",
+ "size": [1280, 800],
+ "out": "shots/o8/play_soak",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.castBed && G.castBed.beat === 'falls' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(window.__mem = [], window.__memOf = () => { const m = N.renderer.info.memory; window.__mem.push({ t: +G.castBed.T.toFixed(0), geo: m.geometries, tex: m.textures, people: G.people.list.length, pooled: [...G.people.pool.values()].reduce((a, L) => a + L.length, 0), falls: G.castBed.rec.length }); return JSON.stringify(window.__mem[window.__mem.length - 1]); }, 1)" },
+  { "wait": 60000 },
+  { "heap": "m1" }, { "eval": "window.__memOf()" },
+  { "wait": 120000 },
+  { "heap": "m3" }, { "eval": "window.__memOf()" },
+  { "wait": 120000 },
+  { "heap": "m5" }, { "eval": "window.__memOf()" },
+  { "wait": 120000 },
+  { "heap": "m7" }, { "eval": "window.__memOf()" },
+  { "wait": 120000 },
+  { "heap": "m9" }, { "eval": "window.__memOf()" },
+  { "wait": 90000 },
+  { "heap": "m10" }, { "eval": "window.__memOf()" },
+  { "eval": "JSON.stringify({ heap: window.__heap, mem: window.__mem })" },
+  { "expect": "window.__heap.m10 - window.__heap.m3 < 4 && window.__mem[window.__mem.length - 1].geo - window.__mem[1].geo < 25 && window.__mem[window.__mem.length - 1].tex - window.__mem[1].tex < 6", "label": "flat from the third minute: the heap within 4 MB, the geometries within 25, the textures within 6" },
+  { "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()", "label": "no errors in #errlog" }
+ ]
+}

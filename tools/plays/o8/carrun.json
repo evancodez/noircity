@@ -1,0 +1,113 @@
+{
+ "about": "[O8 after the critic] eight men stood ahead of my car (1.7 s of its way, or 0.8 s: a man stepping out late) in the city, one every 2.7 s, W held (35 to 90 km/h), every other one with his back to it: who clears, who freezes, who is hit; no body carried on the bumper; after O2's merge: no moving traffic (notraffic=1) and the kerb ahead cleared of parked cars, so the run is about the men",
+ "url": "/?mute=1&notraffic=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o8_carrun",
+ "steps": [
+  {
+   "wait": 2000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05 && !!G.people",
+   "timeout": 25000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 4000,
+   "label": "in the car"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "(() => { const c = G.city.car, Pk = G.wheels.parked, fx = Math.cos(c.yaw), fz = -Math.sin(c.yaw); let n = 0; for (const r of Pk.recs) { const dx = r.x - c.pos.x, dz = r.z - c.pos.z, al = dx * fx + dz * fz, lat = Math.abs(dx * fz - dz * fx); if (al > 0 && al < 600 && lat < 3.6) { r.gone = true; n++; if (r.body) { const k = Pk.bodies.indexOf(r.body); if (k >= 0) Pk.bodies.splice(k, 1); r.body = null; Pk.dirty = true; } } } return n; })()",
+   "label": "the bed: the parked cars in my line ahead taken away (after O2's merge a taxi parked 66 m on stopped the run)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "until": "G.city.car.kmh > 32",
+   "timeout": 6000
+  },
+  {
+   "eval": "(() => { const c = G.city.car, P = G.people; P.dbgClear(); window.__R = []; window.__n = 0; const f = () => [Math.cos(c.yaw), -Math.sin(c.yaw)]; window.__put = () => { const F = f(), back = window.__n % 2 === 1, near = window.__n % 4 >= 2, d = Math.max(9, (near ? 0.8 : 1.7) * c.kmh / 3.6); const p = P.dbgWalker(c.pos.x + F[0] * d, c.pos.z + F[1] * d, back ? c.yaw + Math.PI / 2 + Math.PI / 2 : c.yaw + Math.PI / 2); const r = { i: window.__n++, kmh: Math.round(c.kmh), d: +d.toFixed(1), back, out: null, carried: 0 }; window.__R.push(r); const t0 = performance.now(); const iv = setInterval(() => { const dx = p.pos.x - c.pos.x, dz = p.pos.z - c.pos.z, ahead = dx * F[0] + dz * F[1], side = Math.abs(-dx * F[1] + dz * F[0]); if (p.down && ahead > 0 && side < 1.3 && ahead < c.spec.halfL + 1.2) r.carried += 1 / 30; if (!r.out && p.down) r.out = 'hit'; if (!r.out && p.mode === 'cower') r.froze = true; if (performance.now() - t0 > 2600) { if (!r.out) r.out = p.mode === 'dash' || p.mode === 'walk' ? 'clear' : p.mode; r.carried = +r.carried.toFixed(2); clearInterval(iv); } }, 33); }; window.__put(); return 'ok'; })()"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "(window.__put(), JSON.stringify(window.__R[window.__R.length - 2]))"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "(window.__put(), JSON.stringify(window.__R[window.__R.length - 2]))"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "(window.__put(), JSON.stringify(window.__R[window.__R.length - 2]))"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "(window.__put(), JSON.stringify(window.__R[window.__R.length - 2]))"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "(window.__put(), JSON.stringify(window.__R[window.__R.length - 2]))"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "(window.__put(), JSON.stringify(window.__R[window.__R.length - 2]))"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "(window.__put(), JSON.stringify(window.__R[window.__R.length - 2]))"
+  },
+  {
+   "wait": 2700
+  },
+  {
+   "eval": "JSON.stringify({ runs: window.__R, hit: window.__R.filter(r => r.out === 'hit').length, carriedMax: Math.max(...window.__R.map(r => r.carried)), stats: G.people.stats })"
+  },
+  {
+   "expect": "window.__R.filter(r => r.out === 'hit').length >= 2 && window.__R.filter(r => r.out === 'clear').length >= 2",
+   "label": "some hit, some clear"
+  },
+  {
+   "expect": "Math.max(...window.__R.map(r => r.carried)) < 0.8",
+   "label": "no body rides the bumper"
+  },
+  {
+   "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()",
+   "label": "no errors in #errlog"
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "about": "[O8] the AI that shows (the bed, ?start=cast.intent): each man shows what he means before he does it, the reaction the step its cause comes - a witness points at me the step he sees the man go down and goes to tell it ~0.9 s later; a cop sent to me holds his palm out the step he says 'Hands up.'; a gang's three each put a hand into the coat at once and the gun comes out 0.3 - 0.6 s after. node tools/play.mjs tools/plays/o8/intent.json",
+ "url": "/?mute=1&start=cast.intent",
+ "size": [1280, 800],
+ "out": "shots/o8/play_intent",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.castBed && G.castBed.beat === 'intent' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "until": "G.castBed.intent.t.end != null", "timeout": 20000 },
+  { "eval": "JSON.stringify(G.castBed.intent.t)" },
+  { "expect": "(() => { const t = G.castBed.intent.t; return t.point - t.punch < 0.2 && t.witGo - t.point > 0.5 && t.witGo - t.point < 1.5; })()", "label": "the witness: his arm out at me within 0.2 s of the blow, then he goes (0.5 - 1.5 s on)" },
+  { "expect": "(() => { const t = G.castBed.intent.t; return t.halt != null && Math.abs(t.halt - t.handsUp) < 0.2; })()", "label": "the cop: his palm out with 'Hands up.'" },
+  { "expect": "(() => { const t = G.castBed.intent.t; return [0, 1, 2].every((i) => t['reach' + i] != null && t['reach' + i] - t.hostile < 0.2 && t['draw' + i] - t['reach' + i] > 0.25); })()", "label": "the three: each hand into the coat within 0.2 s, the gun out a quarter second or more after" },
+  { "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()", "label": "no errors in #errlog" }
+ ]
+}

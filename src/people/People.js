@@ -47,10 +47,12 @@ export const CROWD = {
   // (who walks where: src/people/costumes.js PED_LOOKS, by district, picked
   // by a seeded hash of where he comes on; the newsboy downtown and in the
   // Tenements now and then)
-  newsboy: { downtown: 0.08, tenements: 0.1 },
+  newsboy: { downtown: 0.12, tenements: 0.1 },   // ([O8] after the critic: more of him downtown)
   umbrella: 0.35,                   // a share of them under an open umbrella
 };
 const _v = new THREE.Vector3(), _f = new THREE.Vector3();
+// [O8] the cast's own clips every look may play (src/cast/kinds/o8_swell.js), made under the fade in
+const O8_CLIPS = ['o8_idleShift', 'o8_idlePockets', 'o8_idleSmoke', 'o8_idleArms', 'o8_point', 'o8_halt', 'o8_reach'];
 // the pool's size: figures waiting for a man of their look (no ink slot held)
 const POOL = 40;
 
@@ -94,7 +96,7 @@ export class People {
       const c = COSTUMES[k];
       if (!c) continue;
       for (let l = 0; l < 3; l++) figureGeometry(c, l);
-      try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry', 'o4_getUp']) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
+      try { const B = castBank(k); for (const n of ['idle', 'walk', 'run', 'cower', 'watch', 'koFall', 'ko', 'carry', 'o4_getUp', ...O8_CLIPS]) if (B.has(n)) B.ensure(n); } catch (e) { /* */ }
     }
     // (the hands' programs: the fists and the revolver drawn once out of sight,
     // compiled, put away - the first jab or draw in the street never stalls)
@@ -151,6 +153,11 @@ export class People {
     G.on('crime', this._o4crime);
     // lane O6's destruction set ('smash' { kind, pos, by }): what is someone's (a shop's
     // glass, a stall, a newsstand) broken by my car or my fist is a crime ('smash', 1)
+    // [O8] a gun drawn by the wheel (O7's draw on foot: 'city:arms') is a gun drawn for the street
+    // too - the near ones run the step it comes out (the stand-in hands' own draw did this; the
+    // wheel's did not: nobody turned a head at a revolver out among them)
+    this._arms = (e) => { if (e && e.gun && e.gun !== 'fists' && this.G.city && !this.G.city.inCar && this.G.stage === this.stage) this.hands.menace(true); };
+    G.on('city:arms', this._arms);
     this._smash = (e) => {
       if (!e || !e.pos || !this.G.city || this.G.stage !== this.stage) return;
       if (!(e.kind === 'glass' || e.kind === 'stall' || e.kind === 'newsstand')) return;
@@ -167,6 +174,7 @@ export class People {
     this.G.off('city:in', this._in);
     this.G.off('crime', this._o4crime);
     this.G.off('smash', this._smash);
+    this.G.off('city:arms', this._arms);   // [O8]
     this.police.dispose();
     this.gangs.dispose();
     for (const p of this.list) p.dispose();
@@ -501,6 +509,8 @@ export class People {
     p.lookFor = rec.level >= 2 ? 0.5 : 0.9; p.reportGait = rec.level >= 2 ? 'run' : 'jog';
     p.path = null; p.setGait('idle', 0.15);
     p.face(this.G.eye.x, this.G.eye.z); p.look(this.G.eye);
+    // [O8] (he shows what he means to do: his arm out at me, then he goes)
+    if (p.gesture) p.gesture('o8_point', (p.lookFor || 0.9) + 0.3);
     this.G.emit('witness', { who: p, rec, to: toCop ? 'cop' : 'box' });
   }
   // the witness's way to his box (made again if he wedges): the pavements, then the box's front
@@ -739,7 +749,7 @@ export class People {
     // [O3] after the critic (m5): a man knocked down, not dead, gets up after a few
     // seconds (lane O4's get-up clip), backs off from me and - if it was me who
     // put him down - goes to tell it (M1: the victim reports)
-    if (!p.standing) { if (p.mode === 'down' && p.t > (p.upAfter || (p.upAfter = 3.5 + this.rng.next() * 2.5))) p.getUp(); return true; }
+    if (!p.standing) { if (p.mode === 'down' && p.t > (p.upAfter || (p.upAfter = (p.downWhy === 'punch' ? 5 : 3.5) + this.rng.next() * 2.5))) p.getUp(); return true; }
     if (p.mode === 'rise') { if (p.t > 1.45) this.afterUp(p); return true; }
     // (wedged - his way blocked a long while: out of my sight he goes; in it, back the way he came)
     if (p.stuckN >= 2) {
@@ -838,8 +848,13 @@ export class People {
         const dx = p.pos.x - v.pos.x, dz = p.pos.z - v.pos.z;
         const lx = dx * c - dz * s, lz = dx * s + dz * c;
         if (p.standing && Math.abs(lx) < hl + p.r * 0.6 && Math.abs(lz) < hw + p.r * 0.6) { this.hitByCar(p, v, sp); continue; }
+        // [O8] (a slow car meets him at its face and pushes him out of its box each step - he was
+        // shoved along before it, never struck: met at its face, coming at him, he is struck)
+        if (p.standing && Math.abs(lz) < hw + p.r * 0.5 && Math.abs(lx) < hl + p.r + 0.12 && (dx * v.vel.x + dz * v.vel.z) > 0) { this.hitByCar(p, v, sp); continue; }
         // [O3] after the critic: a man lying in the road is solid to a car (not to feet):
         // shoved out of its way to the side he lies on, the car jolted a little
+        // [O8] a body on the physics layer is woken and met by the car's own box (rolled aside by it)
+        if (!p.standing && p.fig.rag && Math.abs(lx) < hl + 1.2 && Math.abs(lz) < hw + 1.2) { p.fig.rag.wake(); continue; }
         if (!p.standing && Math.abs(lx) < hl + 0.3 && Math.abs(lz) < hw + 0.3) {
           const sd = lz >= 0 ? 1 : -1, out = hw + 0.45 - Math.abs(lz);
           // (local z is the car's right: world (-s, c)... the side he lies on, out of the box)
@@ -853,15 +868,40 @@ export class People {
         if (!p.standing || p.mode === 'dash' || (p.role !== 'walker' && p.role !== 'cop')) continue;
         // coming at him in the next second: the dash clear (the tail's rule)
         let tHit = null;
-        for (const tt of [0.25, 0.5, 0.8, 1.1]) {
+        for (const tt of [0.25, 0.5, 0.8, 1.1, 1.5, 2.0]) {   // ([O8] two seconds out: a car seen coming, not a reflex)
           const fx = dx - v.vel.x * tt, fz = dz - v.vel.z * tt;
           const ax = fx * c - fz * s, az = fx * s + fz * c;
           if (Math.abs(ax) < hl + 1.0 && Math.abs(az) < hw + 1.0) { tHit = tt; break; }
         }
         if (tHit == null) continue;
-        // (too late to clear: a man needs a third of a second to see it and
-        // start; a car coming over 18 m/s gives him less than 0.6 s - the driver's doing)
-        if (tHit < 0.35 || (tHit < 0.6 && sp > 18)) continue;
+        // [O8] after the critic: a man's own reaction, not a reflex faster than any man's. He sees
+        // it (or hears it, his back to it) and starts after his own time: 0.4 - 0.6 s, slower
+        // with his back turned, under an umbrella, in a crowd, drunk. A car fast (over 40 km/h)
+        // or close (8 m) freezes him now and then - the lamps in his eyes, his arms up - and a
+        // driver who aims hits about half the time. Too late when he starts: the arms up, struck.
+        const now = this.G.time, S = p.carSeen;
+        if (!S || S.v !== v || now - S.t > 2.5) {
+          const dd = Math.max(0.1, Math.hypot(dx, dz)), fwd = -(dx * Math.sin(p.fig.yaw) + dz * Math.cos(p.fig.yaw)) / dd;
+          let rt = 0.4 + Math.random() * 0.2;
+          if (fwd < -0.2) rt += 0.25;
+          if (p.umb) rt += 0.15;
+          if (p.drunk) rt += 0.3;
+          if (this.near(p.pos.x, p.pos.z, 2.2).length > 3) rt += 0.1;
+          const risky = sp > 11 || dd - hl < 8;
+          // (after O2's merge: the traffic's cars keep to their lanes at a city's pace and a man
+          // crossing knows them - he is on his guard, never frozen; only a car driven at him, mine,
+          // or a wild one over 60 km/h, takes him by surprise)
+          const wild = v === this.G.vehicles.player || sp > 16.5;
+          if (!wild) rt = Math.min(rt, 0.3);
+          p.carSeen = { v, t: now, rt, wild, freeze: wild && Math.random() < (risky ? 0.5 : 0.08) };
+          continue;
+        }
+        if (now - S.t < S.rt) continue;
+        // (late for a car driven at him: the arms up; a traffic car brushing past: he steps back clear)
+        if (S.freeze || (tHit < 0.3 && S.wild)) {
+          if (p.role === 'walker' && p.mode !== 'cower') { p.cower(v.pos, 1.4); if (Math.random() < 0.6) p.say('o3_cry', { f0: 200 + Math.random() * 60 }); this.stats.froze = (this.stats.froze || 0) + 1; }
+          continue;
+        }
         const side = lz >= 0 ? 1 : -1;
         let rx = s * side, rz = c * side;
         const T = this.stage.track, J = 2.6;
@@ -876,10 +916,18 @@ export class People {
   hitByCar(p, v, sp) {
     const dir = new THREE.Vector3(v.vel.x, 0, v.vel.z).normalize();
     const dead = sp > 9;
-    // (thrown along the car's way a little, onto the street)
-    p.fig.pos.x += dir.x * Math.min(2.5, sp * 0.12); p.fig.pos.z += dir.z * Math.min(2.5, sp * 0.12);
-    this.stage.colliders.resolve(p.fig.pos, 0.3, p.fig.collider);
-    p.knock(dir.clone().negate(), { dead, why: 'car', by: v === this.G.vehicles.player ? 'player' : 'traffic' });
+    // [O8] on the physics layer the car throws him itself: the bumper takes his legs and he
+    // goes over the bonnet (fast) or is knocked down before it (slow); else as O3 had it
+    let push = null;
+    if (this.stage.ragdolls) {
+      const vv = new THREE.Vector3(v.vel.x, 0, v.vel.z);
+      push = sp >= 6 ? { v: vv.multiplyScalar(1.0), lo: 1.2, hi: -0.1, up: 0 } : { v: vv.multiplyScalar(0.95), lo: 0.85, hi: 0.75, up: 0.5 };
+    } else {
+      // (thrown along the car's way a little, onto the street)
+      p.fig.pos.x += dir.x * Math.min(2.5, sp * 0.12); p.fig.pos.z += dir.z * Math.min(2.5, sp * 0.12);
+      this.stage.colliders.resolve(p.fig.pos, 0.3, p.fig.collider);
+    }
+    p.knock(dir.clone().negate(), { dead, why: 'car', by: v === this.G.vehicles.player ? 'player' : 'traffic', push, follow: push ? 0 : 1 });
     this.stats.hitByCar++;
     if (this.G.sfx) { this.G.sfx.play('c3_dent', p.pos.clone().setY(0.8), { k: Math.min(1, sp / 14) }, { ref: 4 }); this.G.sfx.grunt(p.pos.clone().setY(1.2)); }
     // (the car takes it: a jolt off its speed)

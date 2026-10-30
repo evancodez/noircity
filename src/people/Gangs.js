@@ -94,7 +94,14 @@ export class Gangs {
     this.stats.draws++;
     this.P.police.event('gang', { gang: T.gang, why });
     const guns = this.P.police.guns;
-    for (const p of T.men) if (p.standing && !p.armed && p.mode !== 'fight') guns.arm(p, T.gang === 'docks' && T.men.indexOf(p) === 0 ? 'tommy' : 'pistol', T.gang);
+    // [O8] (each man's hand goes into his coat first - seen - and the gun comes out of it a breath later)
+    T.men.forEach((p, i) => {
+      if (!(p.standing && !p.armed && p.mode !== 'fight')) return;
+      const kind = T.gang === 'docks' && i === 0 ? 'tommy' : 'pistol';
+      if (!p.gesture || !p.gesture('o8_reach', 0.95)) { guns.arm(p, kind, T.gang); return; }
+      p.face(this.G.eye.x, this.G.eye.z);
+      this.P.later(0.5 + 0.14 * i, () => { if (p.standing && !p.armed && p.mode !== 'fight') { p.gestureName = null; guns.arm(p, kind, T.gang); } });
+    });
   }
 
   // ---- one step: the threes on their corners, the border fight ---------------------------------

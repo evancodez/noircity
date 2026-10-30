@@ -1,0 +1,20 @@
+{
+ "about": "[O8] the physics layer, the falls (the bed, ?start=cast.falls): a man punched down in the open (he gets up out of how he lies), one shot against the facade, one in a doorway, one on a stoop's steps - each settles (asleep) within 4.5 s of the blow, no part under the walking surface by more than 3 cm, no point more than 4 cm into a wall or a post; the second round of the same (they stand again every nine seconds). node tools/play.mjs tools/plays/o8/falls.json",
+ "url": "/?mute=1&start=cast.falls",
+ "size": [1280, 800],
+ "out": "shots/o8/play_falls",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.castBed && G.castBed.beat === 'falls' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "until": "G.castBed.rec.filter((r) => r.n === 1 && r.settled != null).length === 4", "timeout": 12000, "label": "the four falls of the first round lie still" },
+  { "eval": "JSON.stringify(G.castBed.rec.map((r) => ({ name: r.name, n: r.n, settled: r.settled, minY: +r.minY.toFixed(3), through: r.through, at: r.at })))" },
+  { "expect": "G.castBed.rec.filter((r) => r.n === 1).every((r) => r.settled < 4.5 && r.minY > -0.03 && r.through === 0)", "label": "round 1: settled within 4.5 s, nothing under the surface, nothing into a wall" },
+  { "until": "(() => { const S = G.castBed.stations.find((s) => s.name === 'knock'); return S && S.p && S.p.standing && S.t > 5.5 && S.t < 8.5; })()", "timeout": 9000, "label": "the man punched down gets up out of how he lies" },
+  { "shot": "f1_up" },
+  { "until": "G.castBed.rec.filter((r) => r.n === 2 && r.settled != null).length === 4", "timeout": 16000, "label": "the second round lies still" },
+  { "eval": "JSON.stringify(G.castBed.rec.filter((r) => r.n === 2).map((r) => ({ name: r.name, settled: r.settled, minY: +r.minY.toFixed(3), through: r.through, at: r.at })))" },
+  { "expect": "G.castBed.rec.filter((r) => r.n === 2).every((r) => r.settled < 4.5 && r.minY > -0.03 && r.through === 0)", "label": "round 2 the same" },
+  { "expect": "!document.querySelector('#errlog') || !document.querySelector('#errlog').textContent.trim()", "label": "no errors in #errlog" }
+ ]
+}

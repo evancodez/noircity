@@ -6,6 +6,7 @@ import { tagInk, allocInkId } from '../render/layers.js';
 import { DISTRICTS } from '../world/plan.js';
 import { crowdOf } from '../combat/brawl/Crowd.js';
 import { kitUse, kitFree, rayHits } from './patrol.js';
+import { armFigure } from '../cast/arm.js';   // [O8]
 import { drawnGun } from './fist.js';
 import { input } from '../input/Pad.js';
 
@@ -447,11 +448,15 @@ export class Bounty {
       why: { open: `${this.short(b)} shot you in the open.`, moving: `${this.short(b)} shot you in the open.`, bare: `${this.short(b)} shot you. Get behind something.` } });
     if (!K) return;
     const r = new RNG(b.seed);
-    const h = K.spawn({ kind: 'pistol', at: p, way: { steps: [{ x: p.x, z: p.z }] }, cover: true, yaw: Math.atan2(e.x - p.x, e.z - p.z),
-      variant: { coat: Math.floor(r.next() * 3), brim: Math.floor(r.next() * 2), tall: Math.floor(r.next() * 2), cig: r.next() < 0.5 } });
+    // [O8] the man himself draws (his own figure to the gun kit: src/cast/arm.js) - no other man
+    // made where he stood; a new gunman only if he has no figure standing
+    const own = M.c && M.c.fig && M.c.fig.alive && !M.c.down;
+    const h = own ? armFigure(G, K, M.c, { kind: 'pistol' })
+      : K.spawn({ kind: 'pistol', at: p, way: { steps: [{ x: p.x, z: p.z }] }, cover: true, yaw: Math.atan2(e.x - p.x, e.z - p.z),
+        variant: { coat: Math.floor(r.next() * 3), brim: Math.floor(r.next() * 2), tall: Math.floor(r.next() * 2), cig: r.next() < 0.5 } });
     h.bountyId = b.id;
     if (hpK < 1) h.hp = Math.round(h.hp * hpK);
-    try { G.cast.remove(M.c); } catch (err) { /* */ }
+    if (!own) { try { G.cast.remove(M.c); } catch (err) { /* */ } }
     M.c = null; M.h = h; M.max = h.hp / hpK; M.mode = 'gun'; M.t = 0;
     if (G.hud.say) G.hud.say('Wrong man to draw on.', 1.8, { always: true });
     G.emit('bounty:gun', { id: b.id });

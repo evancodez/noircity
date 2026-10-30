@@ -5,6 +5,8 @@ import { allocHoodSlot, releaseHoodSlot, HOOD_ID0, FIG_ANCHOR } from '../render/
 import { roundedBox } from '../world/geom.js';
 import { STREET } from '../world/Street.js';
 import { buildTommyGeometry } from '../player/Viewmodel.js';
+import { Ragdoll } from '../cast/ragdoll.js';   // [O8] the physics layer (a stage that asks: stage.ragdolls)
+import { applyStyle } from '../cast/style.js';   // [O8] a man's own carriage, walk and habits
 
 // The Hood: a procedural man in a fedora and a belted trench coat.
 //
@@ -814,6 +816,10 @@ export function driveSkirt(b, groundW = 1) {
   }
 }
 
+// [O8] the bones the style layer turns (src/cast/style.js)
+const STYLE_BONES = new Set(['spine', 'chest', 'neck', 'head', 'upperArmL', 'upperArmR', 'coat']);
+// [O8] scratch for the ragdoll's start and end
+const _rg = { v: new THREE.Vector3(), q: new THREE.Quaternion(), m: new THREE.Matrix4() };
 // scratch for Hood.postPose (per Hood per step)
 const _pp = {
   e: new THREE.Euler(), m: new THREE.Matrix4(), tl: new THREE.Vector3(), q: new THREE.Quaternion(), Y: new THREE.Vector3(0, 1, 0),
@@ -839,6 +845,9 @@ const HAT_TUMBLE = {
 };
 
 // ---------------------------------------------------------------------------
+// [O8] who is told when a figure goes onto the physics layer and off it (src/cast/o8extras.js:
+// the shirt front and the cuffs a man shows lying, so a body on the black street reads)
+export const RAG_HOOKS = [];
 export class Hood {
   // build (the cast's costumes, src/cast/Figure.js; a Hood passes none):
   // { lods: [geo x3], offsets: { joint: Vector3 }, scale, animator(obj),
@@ -989,8 +998,35 @@ export class Hood {
     if (!this.alive) return;
     this.state = name;
     if (name === 'stepOut') this._rm = 0;
-    const ts = name === 'walk' ? this.gaitScale(WALK.speed) : name === 'run' ? this.gaitScale(RUN.speed) : 1;
-    this.anim.play(name, { fade, timeScale: ts });
+    const ts = name === 'walk' ? this.gaitScale(WALK.speed) : name === 'run' ? this.gaitScale(RUN.speed) : name === 'idle' && this.style && this.style.rate ? this.style.rate : 1;
+    // [O8] the idle a man keeps (his style's: the weight on one leg, hands in the pockets ...)
+    const nm = name === 'idle' && this.idleName ? this.idleName : name;
+    this.anim.play(nm, { fade, timeScale: ts });
+  }
+  // [O8] a figure's own build, carriage, walk and habits (src/cast/style.js: styleFor);
+  // null: as the costume is
+  setStyle(S) {
+    this.style = S || null;
+    const sc = this.scale;
+    if (S) this.object.scale.set(sc * S.wx, sc, sc * S.wz); else this.object.scale.setScalar(sc);
+    const hat = this.bones.hat;
+    if (hat && hat.parent === this.bones.head) { if (S && S.hat) hat.quaternion.setFromEuler(_pp.e.set(S.hat[0], 0, S.hat[1])); else hat.quaternion.identity(); }
+    const bank = this.anim && this.anim.bank;
+    this.idleName = S && S.idle && S.idle !== 'idle' && bank && bank.has(S.idle) ? S.idle : null;
+    if (this.anim && this.anim.seedPhase) this.anim.seedPhase(S && S.phase != null ? S.phase : null);
+  }
+  // [O8] the bones a layer turns on top of the mixer's pose, marked moved each step: the
+  // mixer writes a bone only when its value moved, and a layer laid on an unwritten bone
+  // would be laid on last step's layer (the CastAnimator's own fix, for every bone named)
+  dirtyBones(names) {
+    const M = this.anim && this.anim.mixer, binds = M && M._bindings;
+    if (!binds) return;
+    const other = M._accuIndex;
+    for (const pm of binds) {
+      const b = pm.binding, node = b && (b.targetObject || b.node);
+      if (!node || !names.has(node.name)) continue;
+      const n = pm.valueSize; pm.buffer[other * n + n] = NaN;
+    }
   }
   gaitScale(clipSpeed) {
     return this.speed > 0.05 ? this.speed / (clipSpeed * this.scale) : 1;
@@ -1038,8 +1074,121 @@ export class Hood {
     this.anim.play(kind, { fade: 0.08 });
     this._deathT = 0;
     this._deathKind = kind;
+    // [O8] in the city the fall is the light ragdoll's, reaching for this clip; the round's way pushes it
+    if (this.world.ragdolls && !this.rag) {
+      const d = this._hitDir;
+      this.startRagdoll({ clip: kind, push: d ? { v: _rg.v.set(d.x, 0, d.z).normalize().multiplyScalar(this._hitPower ?? 1.3), lo: 0.05, hi: 1 } : null });
+    }
   }
   lookAt(v) { this.lookTarget = v ? v.clone() : null; }
+
+  // ---- [O8] the physics layer: a light ragdoll for a fall (src/cast/ragdoll.js) -----------------
+  //   startRagdoll({ clip, push: { v, lo, hi, up }, follow })   the fall from where he stands
+  //   endRagdoll({ instant })   up again (the get-up clip blends out of how he lies)
+  // While it runs the mixer is not stepped: the points pose the bones.
+  startRagdoll({ clip = 'koFall', push = null, follow = 1 } = {}) {
+    if (!this.world.ragdolls) return null;
+    if (this.rag) { if (push && push.v) { this.rag.wake(); for (let i = 0; i < this.rag.o.length; i++) this.rag.o[i].addScaledVector(push.v, -(this.rag._h || 1 / 60) * (push.lo ?? 1)); } return this.rag; }
+    this.lookTarget = null; this._lookW = 0; this.aiming = false; this._aimW = 0;
+    if (this._legOff) { this.yaw += this._legOff; this._legOff = 0; }
+    this.object.rotation.y = this.yaw;
+    this.object.updateMatrixWorld(true);
+    this._ragBlend = null;
+    this.rag = new Ragdoll(this, { clip, push, follow });
+    for (const f of RAG_HOOKS) f(this, true);
+    return this.rag;
+  }
+  // the lying clips (a ragdoll goes on while the figure plays one of these)
+  ragLying(name = this.anim.base) {
+    const c = this.anim.clips[name];
+    return name === 'ko' || name === 'koFall' || DEATHS.includes(name) || !!(c && c.death) || /^br_ko/.test(name || '');
+  }
+  endRagdoll({ instant = false } = {}) {
+    const R = this.rag;
+    if (!R) { if (instant) this._ragBlend = null; return; }
+    this.rag = null;
+    for (const f of RAG_HOOKS) f(this, false);
+    if (instant) { this._ragBlend = null; return; }
+    // where he lies -> where the get-up clip starts: his feet at the root, his head
+    // along -z of it, the pelvis 0.8 m back (KO_LIE: castAnim.js); on his front the
+    // same line (the blend rolls him onto his back as he comes up)
+    const L = R.lie();
+    const yaw = L.dir + Math.PI;
+    const s = this.scale, c = Math.cos(yaw), sn = Math.sin(yaw);
+    const lx = 0.01 * s, lz = -0.8 * s;
+    this.pos.x = L.x - (lx * c + lz * sn); this.pos.z = L.z - (-lx * sn + lz * c);
+    this.yaw = yaw; this._prevYaw = yaw; this._prevPos.copy(this.pos);
+    if (this._rmClip) { this._rmClip.x0 = this.pos.x; this._rmClip.z0 = this.pos.z; this._rmClip.yaw0 = yaw; }
+    if (this.world.colliders) this.world.colliders.resolve(this.pos, 0.3, this.collider);
+    // the pose as it lay, in his new frame: blended into the clip's over a few tenths
+    const obj = this.object;
+    const snap = {};
+    for (const [name, b] of Object.entries(this.bones)) {
+      if (name === 'hat' && b.parent === obj) continue;
+      snap[name] = b.quaternion.clone();
+    }
+    // (the hips: the world pose as it lay, re-expressed under the moved root)
+    const hipsQ = this.bones.hips.getWorldQuaternion(new THREE.Quaternion());
+    const hp = R.point('pv', new THREE.Vector3());
+    obj.position.copy(this.pos); obj.rotation.y = yaw; obj.updateMatrixWorld(true);
+    snap.hips = obj.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(hipsQ);
+    hp.applyMatrix4(_rg.m.copy(obj.matrixWorld).invert());
+    this._ragBlend = { t: 0, dur: R.facing() === 'down' ? 0.55 : 0.32, q: snap, hips: hp };
+  }
+  // per step while it runs: the points, the root under the pelvis, the bones, the coat
+  ragStep(dt) {
+    const R = this.rag, obj = this.object;
+    if (R.asleep && R._posed) {
+      if (this.hat) this.updateHat(dt);
+      return;
+    }
+    R.step(dt);
+    const pv = R.p[0];
+    const ox = this.pos.x, oz = this.pos.z;
+    this.pos.x = pv.x; this.pos.z = pv.z;
+    this.pos.y = this.surface ? this.surface(this.pos.x, this.pos.z) : groundY(this.pos.x);
+    // (a hat in the air is in his frame: it keeps its own way as the frame follows the body)
+    if (this.hat && !this.hat.rest) {
+      const c = Math.cos(this.yaw), s = Math.sin(this.yaw), dx = (this.pos.x - ox) / this.scale, dz = (this.pos.z - oz) / this.scale;
+      this.hat.bone.position.x -= dx * c - dz * s; this.hat.bone.position.z -= dx * s + dz * c;
+    }
+    obj.position.copy(this.pos);
+    obj.rotation.y = this.yaw;
+    if (this.collider) { this.collider.x = this.pos.x; this.collider.z = this.pos.z; }
+    obj.updateMatrixWorld(true);
+    R.pose();
+    obj.updateMatrixWorld(true);
+    this.postPose(dt);
+    if (this._deathT >= 0) {
+      this._deathT += dt;
+      if (!this.hat && this.hatFlies !== false && this._deathT >= (HAT_OFF[this._deathKind] ?? 0.1)) this.launchHat();
+    }
+    if (this.hat) this.updateHat(dt);
+    obj.updateMatrixWorld(true);
+    if (this.slot >= 0) FIG_ANCHOR[this.slot].set(this.pos.x, this.pos.y, this.pos.z, this.yaw);
+    this._poseVer++;
+    if (R.asleep) R._posed = true;
+  }
+  // after the mixer, while the get-up blends out of the ragdoll's pose
+  ragBlendStep(dt) {
+    const B = this._ragBlend;
+    B.t += dt;
+    const k = Math.min(1, B.t / B.dur), e = k * k * (3 - 2 * k);
+    for (const [name, q] of Object.entries(B.q)) {
+      const b = this.bones[name];
+      if (b) b.quaternion.slerpQuaternions(q, b.quaternion.clone(), e);
+    }
+    this.bones.hips.position.lerpVectors(B.hips, this.bones.hips.position.clone(), e);
+    if (k >= 1) this._ragBlend = null;
+  }
+  // (the mixer writes a bone only when its value moved: while a blend lays a pose over
+  // it, every bone is marked moved so the blend is always over the clip, never over itself)
+  ragDirty() {
+    const M = this.anim.mixer, binds = M && M._bindings;
+    if (!binds) return;
+    const other = M._accuIndex;
+    for (const pm of binds) { const n = pm.valueSize; pm.buffer[other * n + n] = NaN; }
+  }
 
   // debug: lowest skinned vertex above the ground under the Hood (metres;
   // negative = clipping into the street)
@@ -1081,6 +1230,11 @@ export class Hood {
       // (beyond ~16 m his lamp shadow is a few pixels; every caster in a
       // lamp's cone re-renders its shadow map, render/Pipeline.js)
       this.mesh.castShadow = d < 16;
+    }
+    // [O8] the ragdoll poses him while it runs (a get-up clip ends it: blended out of how he lies)
+    if (this.rag) {
+      if (!this.ragLying() && (this.alive || this.character)) this.endRagdoll();
+      else { this.ragStep(dt); return; }
     }
     // [C2b] after the critic: a short step taken facing his target (HoodAI.step
     // sets stepYaw, the way he goes, each step): the legs turn toward it, up to
@@ -1159,7 +1313,10 @@ export class Hood {
     obj.rotation.y = this.yaw + (this._legOff || 0);
     if (this.collider) { this.collider.x = this.pos.x; this.collider.z = this.pos.z; }
 
+    if (this._ragBlend) this.ragDirty();   // [O8]
+    else if (this.style) this.dirtyBones(STYLE_BONES);   // [O8]
     this.anim.update(dt);
+    if (this._ragBlend) this.ragBlendStep(dt);   // [O8]
     obj.updateMatrixWorld(true);
     this.postPose(dt);
     if (this.afterPose) { this.afterPose(this, dt); obj.updateMatrixWorld(true); }
@@ -1189,6 +1346,7 @@ export class Hood {
       let dyaw = this.yaw - this._prevYaw;
       dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
       const yawRate = dyaw / dt;
+      this._yawRate = yawRate;   // [O8] (the lean into a turn)
       const H = this._hem, k = 60, damp = 7;
       // +x tips the hem back (it lags a forward start); +z swings it toward
       // his left, so it goes opposite to the sideways (centripetal) pull and
@@ -1248,6 +1406,7 @@ export class Hood {
         if (axis.lengthSq() > 1e-6) b.upperArmR.quaternion.premultiply(q.setFromAxisAngle(axis.normalize(), elev));
       }
     }
+    if (this.style) applyStyle(this, dt);   // [O8]
     this.object.updateMatrixWorld(true);
   }
 
