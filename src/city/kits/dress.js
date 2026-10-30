@@ -132,11 +132,25 @@ const PIECES = {
     return P;
   },
   bins(v) {
-    const P = [], n = 2 + (v > 0.6 ? 1 : 0);
+    // ([O1c] after the critic, m5: the groups on a street read the same - three cans, the
+    // same lids. By the hash now: two or three cans, a gap where one was taken away, one
+    // pulled out of line or turned, a lid askew, a lid off and lying on the flags by its can
+    // (the can open: its black mouth), the cans of one group not one grey)
+    const P = [], n = 2 + (v > 0.6 ? 1 : 0), h2 = (v * 13.7) % 1, h3 = (v * 29.3) % 1, gap = h2 > 0.55 && n === 3 ? 1 : -1;
     for (let i = 0; i < n; i++) {
-      const x = (i - (n - 1) / 2) * 0.56, dent = (v * 7 + i) % 1;
-      P.push([lathe([[0, 0], [0.24, 0], [0.26, 0.8], [0.28, 0.82], [0, 0.82]], 12).translate(x, 0, 0), G.tin * 0.6]);
-      P.push([lathe([[0, 0.12], [0.18, 0.08], [0.29, 0.0], [0.29, -0.02], [0, -0.02]], 12).rotateZ(dent > 0.7 ? 0.5 : 0).translate(x + (dent > 0.7 ? 0.1 : 0), 0.84, 0), G.tin * 0.8]);
+      if (i === gap) continue;
+      const dent = (v * 7 + i) % 1, out = i === n - 1 && h3 > 0.5 ? 0.12 + 0.1 * h3 : 0, tone = 0.5 + ((v * 17 + i * 0.41) % 1) * 0.25;
+      const x = (i - (n - 1) / 2) * 0.56 + (out ? 0.05 : 0), z = out;
+      const lid = dent > 0.72 ? 'askew' : dent < 0.2 + 0.15 * h2 ? 'off' : 'on';
+      P.push([lathe([[0, 0], [0.24, 0], [0.26, 0.8], [0.28, 0.82], [0, 0.82]], 12).translate(x, 0, z), G.tin * tone]);
+      const L = lathe([[0, 0.12], [0.18, 0.08], [0.29, 0.0], [0.29, -0.02], [0, -0.02]], 12);
+      if (lid === 'on') P.push([L.translate(x, 0.84, z), G.tin * 0.8]);
+      else if (lid === 'askew') P.push([L.rotateZ(0.5).translate(x + 0.1, 0.84, z), G.tin * 0.8]);
+      else {
+        // (off: lying on its rim against the can's foot, the can's mouth black)
+        P.push([L.rotateX(-1.25).rotateY(h3 * 2 - 1).translate(x + (i - (n - 1) / 2 >= 0 ? 0.32 : -0.32), 0.27, z + 0.3), G.tin]);
+        P.push([cyl(0.25, 0.25, 0.01, 12).translate(x, 0.815, z), G.ink]);
+      }
     }
     return P;
   },

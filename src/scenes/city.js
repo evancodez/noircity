@@ -16,6 +16,7 @@ import { swimStep } from '../world/swim.js';
 import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
 import { arms, owns } from '../combat/money.js';   // [O5] the wheel through what I own; [O7] the revolver under my arm
 import { fistStep } from '../night/fist.js';   // [O7] after the critic: the bare hand in the street
+import { rockTick } from '../world/fistThings.js';   // [O1c] a car a fist struck rocks
 import { wake as fallWake } from '../combat/fall.js';   // [O7] the hospital's words
 
 // NOIR CITY's free roam (lane O1): the city, a car at the kerb, nothing I
@@ -370,6 +371,7 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     return;
   }
   T.foot += dt;
+  rockTick(G, R);   // [O1c] (a car a fist struck rocks on its springs)
   // [O2] a fist fight on the pavement (a driver who came back for his car): no car's E under it
   if (G.brawl && G.brawl.active) { if (T.inShown) { T.inShown = false; hud.clearPrompt('cityin'); } if (T.door) { T.door = null; hud.clearPrompt('citydoor'); } return; }
   // the car I left rolls out what was left of its roll, its brakes on, and
@@ -422,7 +424,10 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   if (inP !== !!T.inShown || (inP && hud.promptOwner !== 'cityin')) { T.inShown = inP; if (inP) hud.prompt('E  get in', null, 'cityin'); else hud.clearPrompt('cityin'); }
   if (near && ctx.pressed('KeyE')) { getIn(ctx, R, T, nearCar); return; }   // ([O2] getIn makes it my car: city:mycar)
   // [O2] any other car: mine (left), parked (broken into), driven (taken) - vehicles/hijack.js
-  if (!near && G.wheels && G.wheels.hijack.footStep(ctx, R)) { if (T.door) { T.door = null; hud.clearPrompt('citydoor'); } return; }
+  // ([O1c] after O2's merge: looking at a car to take, a press of LMB / RMB is still the fist's - it
+  // dents the car (world/fistThings.js) - unless a break-in or its fight is on)
+  const fistAtCar = G.wheels && !G.wheels.hijack.act && !G.wheels.hijack.fight && (G.pressed('Mouse0') || G.pressed('Mouse2'));
+  if (!near && G.wheels && G.wheels.hijack.footStep(ctx, R) && !fistAtCar) { if (T.door) { T.door = null; hud.clearPrompt('citydoor'); } return; }
   // [O7] after the critic (B3: LMB on foot with empty hands did nothing): the bare hand's LMB / RMB throws
   // O4's jab on the press - the hands, the whiff; on a man in reach, the fight (fist.js)
   if (fistStep(ctx, R)) return;

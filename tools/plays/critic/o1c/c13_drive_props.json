@@ -1,0 +1,17 @@
+{
+ "about": "[O1c critic] the coupe up onto Grand Ave's east pavement: what the props and the lamp posts do (over, stand, stop the car), and nothing driven through.",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o1cc/13",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(G.save.flags.taught = Object.assign(G.save.flags.taught || {}, { city_in: true, city_drive: true, city_map: true }), window.__ev0 = G.stage.smash.events.length, 1)" },
+  { "walk": [[-112.4, 33.2]], "timeout": 4000 },
+  { "key": "KeyE", "hold": 80 }, { "wait": 1800 },
+  { "eval": "JSON.stringify({inCar: G.city.inCar})" },
+  { "down": "KeyW" }, { "wait": 1500 }, { "down": "KeyD" }, { "wait": 500 }, { "up": "KeyD" }, { "wait": 3500 }, { "shot": "pave" }, { "up": "KeyW" }, { "wait": 1500 },
+  { "eval": "(() => { const c = G.city.car; const S = G.stage.smash; const ev = S.events.slice(window.__ev0).map((e) => e.what + ':' + (S.items.find((i) => i.id === e.id) || {}).kind + ':' + e.by); const cols = G.stage.colliders.near(c.pos.x, c.pos.z, 3).filter((o) => o.tag === 'wall' || o.tag === 'edge').length; return JSON.stringify({pos: [c.pos.x.toFixed(1), c.pos.z.toFixed(1)], v: (c.speed*3.6).toFixed(0), dmg: c.damage ?? c.hp, ev, wallsNear: cols}); })()" }
+ ]
+}

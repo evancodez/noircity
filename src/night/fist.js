@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { crowdOf } from '../combat/brawl/Crowd.js';
+import { thingStep, thingTick } from '../world/fistThings.js';   // [O1c] the street answers a fist
 
 // [O7] after the critic (B3: 'LMB on foot with empty hands does nothing'): the
 // bare hand in the street. The rulebook (WAVE_C §2) gives LMB as the right
@@ -23,8 +24,10 @@ export function fistStep(ctx, R) {
   // (the hands down a breath after the last swing at nobody)
   if (R.fistDown != null && G.time > R.fistDown) { R.fistDown = null; if (!F.active && !drawnGun(G) && H.set === 'fists') { H.equip('empty'); G.setViewmodelVisible(false); } }
   if (R.inCar || F.active || (G.brawl && G.brawl.active) || G.failing || drawnGun(G)) return false;
+  const beat = thingTick(G, R);   // [O1c] (the beat after a hurt hand)
   const L = G.pressed('Mouse0'), Rt = G.pressed('Mouse2');
   if (!L && !Rt) return false;
+  if (beat) return true;
   const P = R.places;
   if (P && (P.seat || (P.inside && P.fistAt === G.time))) return false;
   const arm = L ? 'L' : 'R';
@@ -39,6 +42,8 @@ export function fistStep(ctx, R) {
     G.emit('city:fist', { man: man.name || null, kind });
     return true;
   }
+  // [O1c] no man: a thing in reach answers as its kind (a bin goes over, glass cracks, a wall hurts)
+  if (thingStep(G, R, arm)) return true;
   // nobody: the swing, the whiff
   G.setViewmodelVisible(true);
   if (H.set !== 'fists') H.equip('fists');

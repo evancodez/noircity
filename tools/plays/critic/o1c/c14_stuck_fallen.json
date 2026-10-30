@@ -1,0 +1,123 @@
+{
+ "about": "[O1c critic] stuck on what my fist knocked over: walk into dustbins jabbing (W held through the fall, as a player walking at them does), then try to walk off them four ways by real keys; then what holds me.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1cc/14",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.save.flags.taught = Object.assign(G.save.flags.taught || {}, { city_in: true, city_drive: true, city_map: true, o3_punch: true, o3_hands: true }), 1)"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/plays/critic/o1c/approach.mjs",
+   "targets": [
+    {
+     "name": "bins",
+     "find": "(() => { const it = G.stage.smash.items.find((i) => i.kind === 'bins' && Math.abs(i.x + 133.4) < 0.4 && Math.abs(i.z - 100.1) < 0.4); return it ? { x: it.x, z: it.z, it } : null; })()",
+     "settle": 1500
+    }
+   ],
+   "check": "true"
+  },
+  {
+   "look": [
+    430,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({pos: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], yaw: +N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "look": [
+    430,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({pos: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], yaw: +N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "look": [
+    430,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({pos: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], yaw: +N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "look": [
+    430,
+    0
+   ],
+   "steps": 6
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "eval": "JSON.stringify({pos: [+N.controller.pos.x.toFixed(2), +N.controller.pos.z.toFixed(2)], yaw: +N.controller.yaw.toFixed(2)})"
+  },
+  {
+   "eval": "(() => { const P = N.controller.pos, C = G.stage.colliders; const near = C.near(P.x, P.z, 1.6).map((o) => (o.r != null ? 'circle r' + o.r.toFixed(2) + ' d' + Math.hypot(o.x - P.x, o.z - P.z).toFixed(2) : 'box ' + (o.tag || '') + ' ' + (o.hx||0).toFixed(2) + 'x' + (o.hz||0).toFixed(2) + ' d' + Math.hypot(o.cx - P.x, o.cz - P.z).toFixed(2)) + ' ' + (o.tag || '') + (o.it ? ' it:' + o.it.kind : '')); const its = G.stage.smash.near(P.x, P.z, 2).map((i) => i.kind + ':' + i.state + ' d' + Math.hypot(i.P.x - P.x, i.P.z - P.z).toFixed(2) + (i.proxy ? ' proxy' : '')); return JSON.stringify({near, its}); })()"
+  },
+  {
+   "shot": "stuck"
+  }
+ ]
+}

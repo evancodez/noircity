@@ -1,0 +1,177 @@
+{
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1cc/04",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/plays/critic/o1c/approach.mjs",
+   "targets": [
+    {
+     "name": "a bin a cop sees",
+     "find": "__seen('bin') || __seen('bins') || __seen('board')",
+     "settle": 0,
+     "waitFind": 30
+    }
+   ],
+   "check": "true"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "shot": "idle_3"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "shot": "idle_8"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  },
+  {
+   "wait": 450
+  },
+  {
+   "eval": "JSON.stringify({t: +G.time.toFixed(1), heat: G.police.heat, state: G.state, failing: !!G.failing, pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], cop: (() => { let b=null; for (const c of G.police.cops) { const d=Math.hypot(c.pos.x-N.controller.pos.x,c.pos.z-N.controller.pos.z); if(!b||d<b) b=+d.toFixed(1);} return b; })(), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,160)})"
+  }
+ ],
+ "about": "[O1c critic] the vandal's contest, idle: a bin knocked over where a cop sees it, then hands off for 60 s."
+}

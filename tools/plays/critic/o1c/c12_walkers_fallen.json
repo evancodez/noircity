@@ -1,0 +1,70 @@
+{
+ "about": "[O1c critic] what the walkers do with what my fist knocked over: three things knocked over on Grand Ave's pavements, then 45 s of the crowd - any walker found inside a fallen thing (passed through it), any stuck against one.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1440,
+  900
+ ],
+ "out": "shots/o1cc/12",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "eval": "(G.save.flags.taught = Object.assign(G.save.flags.taught || {}, { city_in: true, city_drive: true, city_map: true, o3_punch: true, o3_hands: true }), 1)"
+  },
+  {
+   "wait": 800
+  },
+  {
+   "drive": "tools/plays/critic/o1c/approach.mjs",
+   "targets": [
+    {
+     "name": "board",
+     "find": "__T('board')",
+     "settle": 800
+    },
+    {
+     "name": "bin",
+     "find": "__T('bin')",
+     "settle": 800
+    },
+    {
+     "name": "flowers",
+     "find": "__T('flowers')",
+     "settle": 800
+    },
+    {
+     "name": "bike",
+     "find": "__T('bike')",
+     "settle": 800
+    },
+    {
+     "name": "crates",
+     "find": "__T('crates')",
+     "settle": 800
+    }
+   ],
+   "check": "true"
+  },
+  {
+   "eval": "(() => { const S = G.stage.smash; window.__down = S.items.filter((i) => i.state === 'rest' && !i.gone); window.__thru = {}; window.__near = 0; N.controller.setPose(-112, 30, 0, -0.1); window.__iv2 = setInterval(() => { for (const p of G.people.list) { if (!p.object.visible || !p.standing) continue; for (const it of window.__down) { const d = Math.hypot(p.pos.x - it.P.x, p.pos.z - it.P.z); if (d < 3) window.__near++; const r = it.K.round ? it.K.r : Math.max(it.fp ? Math.max(it.fp.hx, it.fp.hz) : 0.3, 0.3); if (d < r * 0.8) { const k = p.id + ':' + it.kind; const o = window.__thru[k] || (window.__thru[k] = { kind: it.kind, n: 0, min: 9, role: p.role }); o.n++; o.min = Math.min(o.min, +d.toFixed(2)); } } } }, 150); return JSON.stringify(window.__down.map((i) => i.kind + '@' + i.P.x.toFixed(1) + ',' + i.P.z.toFixed(1))); })()"
+  },
+  {
+   "wait": 45000
+  },
+  {
+   "eval": "(clearInterval(window.__iv2), JSON.stringify({near: window.__near, thru: Object.values(window.__thru)}))"
+  }
+ ]
+}

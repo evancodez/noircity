@@ -7,7 +7,8 @@
 // they scatter; a fight: they back off in a ring; a body: they gather).
 //
 //   game.crime.emit(kind, point, by = 'player', opts)  -> the crime's record
-//     kind   'punch' 1 | 'hijack' 1 | 'smash' 1 (what is someone's) | 'shot' 2 |
+//     kind   'punch' 1 | 'hijack' 1 | 'smash' 1 (what is someone's) | 'vandal' 1 ([O1c] a bin,
+//            a board, a crate knocked over by my fist) | 'shot' 2 |
 //            'assault' 2 (a cop knocked down with fists) | 'death' 3 |
 //            'cophurt' 4 (a cop shot or run down) | 'menace' 0 (a gun drawn:
 //            no heat, but the street runs) | 'wreck' 0 | 'body' 0
@@ -19,7 +20,7 @@
 //   game.crime.log      the last 40 records (the plays read them)
 // A record: { id, kind, level, x, z, t, by, seen: 'cop' | 'civ' | null,
 // reporters: n, reported: bool }.
-export const LEVEL = { punch: 1, hijack: 1, smash: 1, shot: 2, assault: 2, death: 3, cophurt: 4, menace: 0, wreck: 0, body: 0 };
+export const LEVEL = { punch: 1, hijack: 1, smash: 1, vandal: 1 /* [O1c] a thing of the street knocked over by my fist */, shot: 2, assault: 2, death: 3, cophurt: 4, menace: 0, wreck: 0, body: 0 };
 // how far a witness sees (m): a cop, a civilian (the brief's numbers)
 export const SEE = { cop: 40, civ: 25 };
 

@@ -1,0 +1,25 @@
+{
+ "about": "[O1c critic] the districts' look: Hester and Doyers (neighbours, not the owner's pairs), the firehouse's doors at arm's length (and a fist on them), the Hill's road under its lamps; colour measured on each.",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o1cc/08",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(G.save.flags.taught = Object.assign(G.save.flags.taught || {}, { city_in: true, city_drive: true, city_map: true }), G.stage.part('stream').warmAround(330, -200), N.controller.setPose(333, -210, 3.1416, 0.03), 1)" },
+  { "wait": 5000 }, { "shot": "hester" },
+  { "eval": "(G.stage.part('stream').warmAround(390, -200), N.controller.setPose(390, -210, 3.1416, 0.03), 1)" },
+  { "wait": 5000 }, { "shot": "doyers" },
+  { "eval": "(G.stage.part('stream').warmAround(-39, -50), N.controller.setPose(-37.3, -50.5, 1.5708, 0.12), 1)" },
+  { "wait": 5000 }, { "shot": "firehouse" },
+  { "eval": "JSON.stringify({prompt: G.hud.el.prompt.style.display !== 'none' ? G.hud.el.prompt.innerText : null})" },
+  { "key": "KeyE", "hold": 80 }, { "wait": 600 },
+  { "eval": "JSON.stringify({prompt: G.hud.el.prompt.style.display !== 'none' ? G.hud.el.prompt.innerText : null, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,120)})" },
+  { "eval": "(window.__f = [], G.on('city:fist', (e) => window.__f.push(JSON.stringify(e))), 1)" },
+  { "mouse": "click", "button": "left" }, { "wait": 700 },
+  { "eval": "JSON.stringify(window.__f)" },
+  { "eval": "(G.stage.part('stream').warmAround(-120, -540), N.controller.setPose(-140, -538, -1.5708, 0.03), 1)" },
+  { "wait": 5000 }, { "shot": "hill" }
+ ]
+}

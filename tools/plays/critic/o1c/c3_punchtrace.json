@@ -1,0 +1,16 @@
+{
+ "about": "[O1c critic] where the 'punch' crime after a bin knocked over comes from (a stack).",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o1cc/03",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "wait": 800 },
+  { "eval": "(() => { window.__st = []; const f = G.crime.emit.bind(G.crime); G.crime.emit = (k, p, b, o) => { window.__st.push(k + ' by ' + b + ' lvl ' + (o && o.level) + ' ' + new Error().stack.split('\\n').slice(2, 6).map((s) => s.trim().replace(/https?:\\/\\/[^/]+/, '')).join(' < ')); return f(k, p, b, o); }; return 1; })()" },
+  { "drive": "tools/plays/critic/o1c/approach.mjs", "targets": [ { "name": "a dustbin", "find": "__T('bin')" } ], "check": "true" },
+  { "eval": "JSON.stringify(window.__st)" },
+  { "eval": "JSON.stringify(G.crime.log.slice(-3).map((r) => ({k: r.kind, lvl: r.level, by: r.by, seen: r.seen, rep: r.reported})))" }
+ ]
+}

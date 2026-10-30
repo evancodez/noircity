@@ -1,0 +1,33 @@
+{
+ "about": "[O1c critic] The first minute cold: the title, BEGIN, look round, walk Grand Ave's pavement, LMB at whatever is in front (a first-timer pokes), what the screen says after each.",
+ "url": "/?mute=1&start=city",
+ "size": [1440, 900],
+ "out": "shots/o1cc/01",
+ "steps": [
+  { "wait": 2500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(window.__fl=[], G.on('city:fist', (e) => window.__fl.push(JSON.stringify(e))), G.on('city:swing', (e)=>window.__fl.push('swing '+JSON.stringify(e))), 1)" },
+  { "look": [1, 0], "steps": 1 },
+  { "wait": 800 },
+  { "shot": "01_start" },
+  { "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], yaw:+N.controller.yaw.toFixed(2), txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,300)})" },
+  { "down": "KeyW" }, { "wait": 3000 }, { "up": "KeyW" },
+  { "mouse": "click", "button": "left" }, { "wait": 700 },
+  { "look": [280, 0], "steps": 6 }, { "wait": 300 },
+  { "down": "KeyW" }, { "wait": 2500 }, { "up": "KeyW" },
+  { "mouse": "click", "button": "left" }, { "wait": 400 }, { "shot": "02_punch1" },
+  { "mouse": "click", "button": "left" }, { "wait": 700 },
+  { "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], fl: window.__fl.slice(-6), heat: G.police && G.police.heat, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,300)})" },
+  { "look": [-560, 0], "steps": 8 }, { "wait": 300 },
+  { "down": "KeyW" }, { "wait": 3000 }, { "up": "KeyW" },
+  { "mouse": "click", "button": "left" }, { "wait": 300 },
+  { "mouse": "click", "button": "left" }, { "wait": 300 },
+  { "shot": "03_punch2" },
+  { "eval": "JSON.stringify({pos:[+N.controller.pos.x.toFixed(1),+N.controller.pos.z.toFixed(1)], fl: window.__fl.slice(-6), heat: G.police && G.police.heat, txt: document.body.innerText.replace(/\\s+/g,' ').slice(0,300)})" },
+  { "key": "KeyC", "hold": 80 }, { "wait": 400 },
+  { "mouse": "click", "button": "left" }, { "wait": 500 },
+  { "eval": "JSON.stringify({crouch: N.controller.crouched ?? N.controller.crouch, fl: window.__fl.slice(-3)})" },
+  { "key": "KeyC", "hold": 80 }, { "wait": 300 }
+ ]
+}

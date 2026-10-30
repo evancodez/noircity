@@ -3,6 +3,7 @@ import { allocInkId } from '../../../render/layers.js';
 import { farLot } from '../../../city/kits/facade.js';
 import { LAMP, lampHead, placeLamp } from '../../../city/kits/street.js';
 import { mergeAll } from './street.js';
+import { districtAt } from '../../../world/plan.js';
 
 // The far city (lane O1): what is always drawn, the whole city over, in
 // tiles of TILE metres - every lot's mass (its tiers, parapet, roof, water
@@ -44,6 +45,7 @@ export default {
     // (a lit shop front is a big pane low in the frame: at 0.34 it printed as
     // a white slab), a lamp's mouth the bulb's white (M.bulb's 8)
     const LIT = 0.62, SHOP = 0.1, BULB = 8;
+    const HILL_BULB = [2.0, 1.65, 0.7];   // [O1c] (yellower than the registry amber: its reflection in the wet printed red)
     const lightMat = new THREE.MeshBasicMaterial({ vertexColors: true });
     const litMat = lightMat, shopMat = lightMat;
     const tiles = new Map();
@@ -83,14 +85,16 @@ export default {
       // the lights in one mesh, each its own level (a vertex colour): the lit
       // windows, the lit shop fronts, the lamps' mouths (their posts are the near chunks')
       const lights = [];
-      const tint = (geos, v) => { for (const g0 of geos || []) { const g = g0.index ? g0.toNonIndexed() : g0; const n = g.getAttribute('position').count; g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(n * 3).fill(v), 3)); lights.push(g); } };
+      const tint = (geos, v) => { for (const g0 of geos || []) { const g = g0.index ? g0.toNonIndexed() : g0; const n = g.getAttribute('position').count; const a = new Float32Array(n * 3); if (Array.isArray(v)) for (let i = 0; i < n * 3; i += 3) { a[i] = v[0]; a[i + 1] = v[1]; a[i + 2] = v[2]; } else a.fill(v); g.setAttribute('color', new THREE.Float32BufferAttribute(a, 3)); lights.push(g); } };
       tint(T.out.lit, LIT); tint(T.out.shop, SHOP);
       const lamp0 = lights.length;
-      tint(T.lamps.map((l) => {
+      // ([O1c] after the critic, m4: the Hill not warm on foot - its globes' glass burns amber,
+      // the gate lanterns' colour a little brighter, and the wet carries it under each)
+      for (const l of T.lamps) {
         _q.setFromAxisAngle(_y, l.yaw);
         _m.compose(new THREE.Vector3(l.x, 0.15, l.z), _q, _s);
-        return placeLamp(LAMP.bulb, l);   // [O1b] (the lamp's own style's mouth)
-      }), BULB);
+        tint([placeLamp(LAMP.bulb, l)], districtAt(l.x, l.z).id === 'hill' && !l.quay && !l.bridge ? HILL_BULB : BULB);   // [O1b] (the lamp's own style's mouth)
+      }
       if (lights.length) {
         // ([O6] each lamp's mouth in the merge: a lamp put out goes dark there - its colour range)
         const ranges = [];
