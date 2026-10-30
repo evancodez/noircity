@@ -161,37 +161,5 @@ function ride(K, s, P) {
   G.sfx.play('c5_liftMotor', lift.cab.position.clone(), {}, { ref: 3 });
 }
 
-function sleep(K, s, P) {
-  const G = P.game;
-  if (P.sleeping) return;
-  P.sleeping = { t: 0 };
-  const T = { t: 0 };
-  const C = G.controller;
-  C.frozen = true;
-  const step = (dt) => {
-    T.t += dt;
-    if (T.t < 1.0) { G.hud.fade(T.t / 1.0); return false; }
-    if (!T.done) {
-      T.done = true;
-      // the heat dies, health whole, the night on an hour, the save written at the hotel
-      G.health.reset();
-      if (G.police && G.police.clear) G.police.clear('sleep');
-      G.emit('heat:clear', { why: 'sleep' });
-      G.emit('night:hour', { hours: 1, why: 'sleep' });
-      const S = G.scenes, was = S.beat;
-      S.beat = 'hotel';
-      const d = G.save.write();
-      S.beat = was;
-      G.emit('saved', { at: 'hotel', ok: !!d });
-      G.hud.kit.failLine && G.hud.kit.failLine('Slept. Saved.');
-      G.hud.kit.failK && G.hud.kit.failK(1);
-    }
-    if (T.t < 3.0) return false;
-    if (T.t < 3.8) { G.hud.kit.failK && G.hud.kit.failK(0); G.hud.fade(1 - (T.t - 3.0) / 0.8); return false; }
-    G.hud.fade(0); G.hud.kit.failLine && G.hud.kit.failLine(null);
-    C.frozen = false;
-    P.sleeping = null;
-    return true;
-  };
-  P.later(step);
-}
+// [O5b] the sleep is the places' own now (a ward's bed sleeps too): the save at the 'hotel' beat
+function sleep(K, s, P) { P.sleepAt('hotel'); }

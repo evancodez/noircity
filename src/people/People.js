@@ -195,7 +195,7 @@ export class People {
       const { cost } = wake(G, 'station');
       if (G.player.weapons.current) G.player.weapons.equip(null);
       G.hud.say(`Released.${cost ? ` Fined $${cost}.` : ''}`, 3.4, { always: true });
-    } else if (why === 'hospital') {
+    } else if (why === 'hospital' && !room) {   // [O5b] (room: the hospital's ward woke me, its wake paid and spoke)
       const { cost } = wake(G, 'hospital');
       G.hud.say(cost ? `Patched up. $${cost} for the stitches.` : 'Patched up. On your feet.', 2.8, { always: true });
     }

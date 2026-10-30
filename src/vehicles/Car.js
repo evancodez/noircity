@@ -493,14 +493,22 @@ export class Car {
 
   hurt(k, point = null) {
     if (k <= 0) return;
+    // [manager, after O2's merge] the city's traffic makes knocks frequent (the drive-through: 55 scrapes
+    // and 4 crashes in 109 s; O3's chase: three crashes and the car burning every try): in the open world
+    // a blow wears a car half as much as in game one's tail. Lane O6c owns the wear by kind and the
+    // warning on the crash path; game one's numbers stand.
+    const city = this.vehicles && this.vehicles.game && this.vehicles.game.city;
+    if (city) k *= 0.5;
     if (globalThis.__c3debug) console.log('hurt', k.toFixed(2), this.kind);
     const before = Math.floor(this.damage);
     // ([C3 4th] a car with a warning level - mine in the tail, warnAt - is
     // never wrecked by one blow from below it: the blow leaves it at half a
     // step short, and the warning comes first; WAVE_C 1.2)
+    // [manager] (and never set burning by it: O6b's warnAt is the fire's step, 3.3, and half a step
+    // short of the wreck, 3.5, was past it - the car went up with no warning; it stops just below)
     const was = this.damage;
     this.damage = Math.min(DAMAGE.wreck + 0.5, this.damage + k);
-    if (this.warnAt != null && was < this.warnAt && this.damage >= DAMAGE.wreck) this.damage = DAMAGE.wreck - 0.5;
+    if (this.warnAt != null && was < this.warnAt && this.damage >= Math.min(DAMAGE.wreck, this.warnAt)) this.damage = Math.min(DAMAGE.wreck - 0.5, this.warnAt - 0.05);
     this.stats.hits++;
     const after = Math.floor(this.damage);
     if (after > before) this.emit('damage', { level: after, k, point });

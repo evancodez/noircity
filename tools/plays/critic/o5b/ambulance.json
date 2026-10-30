@@ -1,0 +1,31 @@
+{
+ "about": "[O5b critic] the ambulance taken: E at its side, the seat's view, W held 4 s (where does it go?), V for the view from behind, W again.",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/critic_o5b/amb",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "look": [0, 0], "steps": 1 },
+  { "eval": "(()=>{N.controller.pitch=0;const s=G.city.places.byId.get('hospital'),F=s.frame;const p=F.w(3.4,3.3);G.stage.part('stream').warmAround(p.x,p.z);N.controller.setPose(p.x,p.z,F.yaw(Math.PI),0);G.stage.part('bounds').navAround(p.x,p.z,30);return 1})()" },
+  { "wait": 1500 },
+  { "eval": "(()=>{const v=G.vehicles.list.find(v=>v.ambulance);window.__amb=v;return 'amb '+!!v})()" },
+  { "look": "(()=>{const v=__amb,C=N.controller,e=G.eye;let dy=Math.atan2(-(v.pos.x-e.x),-(v.pos.z-e.z))-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/C.sensitivity,0]})()", "steps": 5 },
+  { "walk": "(()=>{const v=__amb;return [[v.pos.x,v.pos.z]]})()", "timeout": 5000, "into": true },
+  { "eval": "'prompt '+G.hud.promptShown" },
+  { "key": "KeyE", "hold": 70 },
+  { "wait": 2200 },
+  { "shot": "a_seat" },
+  { "eval": "(window.__tr=[],window.__trI=setInterval(()=>{const v=G.city.car;__tr.push(v.pos.x.toFixed(1)+','+v.pos.z.toFixed(1)+'@'+v.vel.length().toFixed(1))},500),'in '+G.city.inCar+' amb '+(G.city.car===__amb)+' yaw '+__amb.yaw.toFixed(2))" },
+  { "down": "KeyW" }, { "wait": 4000 }, { "up": "KeyW" },
+  { "shot": "b_after_w" },
+  { "key": "KeyV", "hold": 70 },
+  { "wait": 1200 },
+  { "shot": "c_view_v" },
+  { "down": "KeyW" }, { "wait": 3000 }, { "up": "KeyW" },
+  { "wait": 500 },
+  { "shot": "d_after_w2" },
+  { "eval": "(clearInterval(__trI),'track '+__tr.join(' '))" }
+ ]
+}

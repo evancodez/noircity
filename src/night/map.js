@@ -154,6 +154,9 @@ export class NightMap {
       g.beginPath(); g.rect(u - 7, v - 7, 14, 14); g.stroke(); g.fill();
       label(g, placeWord(P), u + 12, v);
     }
+    // [O5b] the hospital (a place of src/places/sites.js, not of O1's plan): found as the others are
+    { const hs = G.city && G.city.places && G.city.places.byId.get('hospital');
+      if (hs && G.save.found.hospital) { const [u, v] = at(hs.door.x, hs.door.z); g.fillStyle = '#050505'; g.strokeStyle = PAPER; g.lineWidth = 3; g.beginPath(); g.rect(u - 7, v - 7, 14, 14); g.stroke(); g.fill(); label(g, 'HOSPITAL', u + 12, v); } }
     // the thing taken up
     const T = N.target;
     if (T) { const [u, v] = at(T.x, T.z); g.lineWidth = 8; g.strokeStyle = '#050505'; g.beginPath(); g.arc(u, v, 16, 0, Math.PI * 2); g.stroke(); g.lineWidth = 4; g.strokeStyle = '#f2efe8'; g.stroke(); }
