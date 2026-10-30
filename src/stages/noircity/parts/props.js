@@ -64,7 +64,9 @@ export default {
           const k = g.getAttribute('position').count, l = Array.isArray(c) ? 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] : c;
           sum += l * k; n += k; g.dispose();
         }
-        const col = new THREE.Color().setScalar(Math.max(0.09, n ? sum / n : 0.09));
+        // ([O1c] a bicycle lies on its side now - a frame of thin lines flat on the black: its enamel
+        // printed pale (0.5, its pale variant's), or only its rims' paper rim showed)
+        const col = new THREE.Color().setScalar(Math.max(kind === 'bike' ? 0.5 : 0.09, n ? sum / n : 0.09));
         P.im.material = propsLike;
         for (let i = 0; i < P.cap; i++) P.im.setColorAt(i, col);
         P.im.instanceColor.needsUpdate = true;
