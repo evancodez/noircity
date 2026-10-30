@@ -251,3 +251,15 @@ the life; your hunt finds what it missed.
   user's words.) Your second pass's whole-game hunt scores the game by its
   five words - smooth, alive, populated, varied, fun - and on theme (the
   ink), each with what you saw and counted, above everything else in §6.
+
+- **[must]** (the user, 2026-10-29, the direction for what is left)
+  "Buildings you can enter, interiors without a loading screen, and things
+  to do in them, destructible / physics objects, stores to rob etc. is a
+  thing to have, if you haven't started on that. Not every interior. In
+  general, things like destruction, environment objects, or NPCs reacting
+  to you is a good idea. Once again, the goal is polish rather than
+  immense scope (apply that to the entire world and the other things you
+  are working on), but it should still be pretty cool and varied. Work
+  your way up. Keep working until I stop you."
+  Your hunt applies it to the whole game: what is broad and unfinished is
+  named for a cut or a finish, never for more.

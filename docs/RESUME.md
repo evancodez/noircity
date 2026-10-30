@@ -104,12 +104,16 @@ a branch); they can be cleaned.
    frames with figures re-taken and named; the alive test's "no two alike").
 4. O1c's return: merge, check (the graph tool at zero, o1b_jank 20/20, the fist
    walk, the colour share, the districts' frames).
-5. Launch **O9** (`docs/briefs/O9_ALIVE.md`, branch `ow/O9-alive`, port 5389,
-   effort xhigh; its [must] lines verbatim; the merge note names what is in main
-   and the manager's baselines of section 6). Then **O2b** (`docs/briefs/O2B_WHEELS.md`,
-   `ow/O2b-wheels`, port 5382, high). Then **O6c** (the fire's warning on the crash
-   path and the wear by kind; its brief is to be written from FOLLOWUPS.md item 2
-   and the wear tune's commit message), then the stale plays (FOLLOWUPS.md item 3).
+5. The order from 2026-10-29 (the user: "polish rather than immense scope ...
+   Work your way up. Keep working until I stop you."): **O9** (`docs/briefs/O9_ALIVE.md`,
+   `ow/O9-alive`, 5389, xhigh; cut to polish in its §0) as soon as O8 is merged;
+   **O5c** (`docs/briefs/O5C_ROOMS.md`, `ow/O5c-rooms`, 5386, build xhigh, critic and
+   fix high) with the next slot after O8's cast is on main; **O6c**
+   (`docs/briefs/O6C_WEAR.md`, `ow/O6c-wear`, 5385, high; launched 2026-10-29);
+   **O2b** (`docs/briefs/O2B_WHEELS.md`, `ow/O2b-wheels`, 5382, high; launched
+   2026-10-29 and paused in its build for O5c's slot: continue it with
+   `lane.worktree` = `.claude/worktrees/wf_e94a1291-7dd-1`); then the stale plays
+   (FOLLOWUPS.md item 3).
 6. O7's second pass: the whole-game hunt, judged by "alive, not canned, not
    stiff" and the propagation / variety rules above the rest (its brief addenda
    are in `docs/briefs/O7_NIGHT.md`).

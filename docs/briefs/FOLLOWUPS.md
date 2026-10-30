@@ -12,6 +12,17 @@ that feels smooth, alive, populated and on theme. Make it look varied, feel
 alive and populated, and have fun gameplay." Every merge is judged by its
 five words - smooth, alive, populated, varied, fun - and on theme (the ink).
 
+And (the user, 2026-10-29, the same day): "...the goal is polish rather than
+immense scope (apply that to the entire world and the other things you are
+working on), but it should still be pretty cool and varied. Work your way up.
+Keep working until I stop you." (the whole quote heads docs/OPEN_WORLD.md).
+Every item below is done completely or cut; nothing is added for breadth.
+The order from 2026-10-29, within the cap of four: O4b (running), O9 (after
+O8's merge), O5c (`docs/briefs/O5C_ROOMS.md`: five rooms done completely),
+O6c (running), O2b (paused in its build to give O5c the slot; continues in
+its worktree), then O7's second pass and phases 3 and 4. No waiting for a
+playtest.
+
 1. **O2b, wheels** (`docs/briefs/O2B_WHEELS.md`; O2 merged at 634c47e with
    the view behind the car, the variants and a seat for every kind): the
    tight hull for rounds, each kind's cabin drawn as the coupe's (the police

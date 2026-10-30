@@ -8,6 +8,15 @@ midday):
 - **[must]** (the user, 2026-10-29, the point of the game; every brief and
   merge is judged by it) "The point of this game is a fun open world that feels smooth, alive, populated and on theme. Make it look varied, feel alive and populated, and have fun gameplay." Smooth, alive, populated, varied, fun,
   and on theme (the ink).
+- **[must]** (the user, 2026-10-29, the direction for what is left)
+  "Buildings you can enter, interiors without a loading screen, and things
+  to do in them, destructible / physics objects, stores to rob etc. is a
+  thing to have, if you haven't started on that. Not every interior. In
+  general, things like destruction, environment objects, or NPCs reacting
+  to you is a good idea. Once again, the goal is polish rather than
+  immense scope (apply that to the entire world and the other things you
+  are working on), but it should still be pretty cool and varied. Work
+  your way up. Keep working until I stop you."
 - **[must]** "The city doesn't feel alive, and NPC reactions, police
   etc., are often too stiff or nonsensical."
 - **[must]** "It's possible the car hitboxes are too big, as bullets seem
@@ -32,6 +41,19 @@ news, the things, the radio), O1's graphs (`docs/seams/WORLD.md`), the
 perf audit's budget table (`docs/reports/PERF_AUDIT.md`: forty figures,
 thirty cars, what is left at 60 fps).
 
+## 0. Scope: polish rather than immense scope (the user, 2026-10-29)
+Fewer things, each done completely, seen working in the street by a cold
+player. Cut from this brief on 2026-10-29 by the manager: the cars' hull
+for rounds and the seats' views (lane O2b owns them: `docs/briefs/O2B_WHEELS.md`),
+the city's sound bed (the phase 4 sound pass; a reaction keeps the cry, the
+whistle or the horn the base already has), and every event past the six
+below. The walkers' reasons: three or four per district, done so a player
+can follow one man to where he goes and see him do it. The rooms' people
+are lane O5c's (`docs/briefs/O5C_ROOMS.md`), building beside you: your
+propagation and variety rules (§1b, §1c) are what its rooms read; name the
+seam (the function a room calls to pass a reaction out of its door) in
+your report and in `docs/seams/`.
+
 ## 1. Alive: density with purpose, and things that happen on their own
 - **Walkers with somewhere to go**: each walker has a destination and a
   reason (the el's stair to a bar's door and in; a stall to a stop; a
@@ -41,21 +63,18 @@ thirty cars, what is left at 60 fps).
   a cop on his beat with its stops. The budget is the audit's (forty in
   view at the busiest street: the light figure beyond the ten nearest,
   the outline beyond that), and the near street is never empty.
-- **Cars with people**: parked cars that someone gets into and drives
-  off, a taxi that drops a fare, a lorry at a loading door with two men
-  carrying crates in, a tram with passengers at its windows, a police car
-  on patrol that is just passing.
-- **Events on a clock, by district**, each seen or heard from a block
-  away and each something the player can walk into: a drunk thrown out
-  of a bar's door; a couple arguing under an awning; a paperboy calling
-  the headline; a street musician under the el; two men fighting in an
-  alley (join either side); a stall-holder shouting his prices; a gang's
-  three at their corner laughing; a window lit, then dark; a radio from
-  a window (the base's music slots); a train on the el every few minutes
-  with its sparks and its roar; a siren far off; once a night a fire
-  engine passing flat out with its red lamp (one of the few colours); a
-  cat on a wall; pigeons that go up. Never the same event twice in a
-  row at the same place; never one that the player cannot interrupt.
+- **Cars with people**: a parked car that a man walks to, gets into and
+  drives off in; a taxi that stops and drops a fare who walks to a door.
+  Two, done so they read from across the street.
+- **Events on a clock, by district**: six, each seen or heard from a
+  block away, each something the player can walk into and each done
+  completely (its start, its people, its end, what it does when the player
+  steps in): a drunk thrown out of a bar's door; two men fighting in an
+  alley (join either side); a paperboy calling the headline (the news
+  line); a gang's three at their corner; a train on the el every few
+  minutes with its sparks; once a night a fire engine passing flat out
+  with its red lamp. Never the same event twice in a row at the same
+  place; never one the player cannot interrupt.
 
 ## 1b. Who knows what: the propagation model (the user's own rule)
 Knowledge of what I did travels like it would, not like a flag:
@@ -119,24 +138,10 @@ no reaction without a cause; no reaction that outlives its cause (a
 crowd that stares for ever, a cop who warns a man who has left); no
 line that does not fit (a cop saying `Hands up.` to a man already down).
 
-## 3. Cars: the hitboxes and the views
-- **Rounds against cars** hit a tight hull: the body and the cabin as
-  two boxes inside the silhouette, the wheel arches and the space over
-  the bonnet and behind the boot excluded, glass a round goes through
-  (and breaks), a tyre its own target. A round that passes a car's edge
-  does not hit it. The same hull for the police's rounds at me in a car.
-- **The first-person view from every car kind** is clear: the eye placed
-  per cabin (the police car, the lorry, the van, the hearse, the taxi),
-  the cabin's pillars, mirror, and frames cut back or thinned where they
-  block the road, the windscreen's rain and wiper in each; a frame from
-  every kind's seat is in the report.
-
-## 4. Sound
-The city's bed by district and hour (the base's sound tools: the
-murmur, footsteps, the el's roar and sparks, far sirens, a jazz from a
-window, the rain on awnings and on the car's roof), and every reaction
-with its sound (a cry, a whistle, a horn, a door). Nothing continuous
-that a player would notice as a loop.
+## 3. Cars and 4. Sound: cut (see §0)
+The hull for rounds and the seats' views are lane O2b's; the sound bed is
+the phase 4 sound pass's. The user's words on both stand above as musts:
+O2b meets them; your report names where.
 
 ## 5. Proofs and gate
 - **The alive test**: a cold critic stands at three corners (Grand Ave
@@ -148,10 +153,6 @@ that a player would notice as a loop.
 - **The nonsense test**: the list in §2 as plays; none produces an absurd
   reaction; the police proofs of O3 still pass (idle / bad / medium /
   good at heat 1 to 3).
-- **The hitbox play**: rounds fired past a car's edge at five angles hit
-  nothing; through its glass, the glass; at its tyre, the tyre.
-- **The view test**: a frame from every car kind's seat, the road
-  visible.
 - fps at the busiest street with the crowd, traffic and an event
   against `shot=perf`; memory flat over ten minutes; golden identical
   (named where the crowd changed a frame); errors clean at every start

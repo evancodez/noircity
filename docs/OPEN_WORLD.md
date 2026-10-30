@@ -13,6 +13,17 @@ fails, the tools). The user's words, which are the standard:
 > open world that feels smooth, alive, populated and on theme. Make it
 > look varied, feel alive and populated, and have fun gameplay.
 
+> (The same day, the direction for what is left; polish rather than
+> immense scope binds every lane and every merge:) Buildings you can
+> enter, interiors without a loading screen, and things to do in them,
+> destructible / physics objects, stores to rob etc. is a thing to have,
+> if you haven't started on that. Not every interior. In general, things
+> like destruction, environment objects, or NPCs reacting to you is a good
+> idea. Once again, the goal is polish rather than immense scope (apply
+> that to the entire world and the other things you are working on), but
+> it should still be pretty cool and varied. Work your way up. Keep
+> working until I stop you.
+
 > An open world game set in this noir aesthetic. You can reuse some
 > assets but for the most part I want a new city. You should be able to
 > drive around, get into shootouts, fist fight (change these mechanics to
@@ -323,6 +334,9 @@ do everything but buy.
 | O4b | weapons in hand: the state machine, no glitch between fists, nothing and the guns; the arrest keeps the gun | `ow/O4b-weapons` | 5384 |
 | O9 | alive: density with purpose, events on a clock, the intention model for every NPC, the police that path and make sense, car hitboxes and views, the city's sound | `ow/O9-alive` | 5389 |
 | O8 | figures: one cast for the city, the Hood's look for everyone, never stiff, the physics layer, AI that shows its intention | `ow/O8-figures` | 5379 |
+| O2b | wheels, the second pass: the tight hull for rounds, each kind's cabin drawn as the coupe's, the speeds, traffic that sees walkers | `ow/O2b-wheels` | 5382 |
+| O6c | car wear, the second pass: the fire's warning on every path, the wear by kind | `ow/O6c-wear` | 5385 |
+| O5c | rooms that answer: five rooms done completely (stores to rob, things that break inside, people inside who react), never a loading screen | `ow/O5c-rooms` | 5386 |
 
 Waves: O1, O4, O6 first (O4 and O6 build and prove on the base's test
 beds and move into the city when O1 merges); then O2, O3, O1b, O5 on
