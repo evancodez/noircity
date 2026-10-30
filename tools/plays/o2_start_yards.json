@@ -1,0 +1,31 @@
+{
+ "about": "[O2] Errors at a start with the wheels on (brief O2 \u00a75: errors clean on ?start=city at every landmark with the traffic on): yards, 20 s with the traffic, the parked cars, the signals and the tram about me; #errlog empty. node tools/play.mjs tools/plays/o2_start_yards.json",
+ "url": "/?mute=1&start=city&at=yards",
+ "size": [
+  960,
+  600
+ ],
+ "out": "shots/o2/o2_start_yards",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 20000
+  },
+  {
+   "expect": "!!G.wheels && G.wheels.traffic.cars.length > 0 && G.wheels.parked.bodies.length >= 0 && G.wheels.signals.nodes.length > 0",
+   "label": "the wheels about me: traffic on, signals"
+  }
+ ]
+}

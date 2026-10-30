@@ -53,7 +53,8 @@ export default async function alive(api) {
       if (p.mode === 'dash') thing('someone dashing clear of a car', false);
       if (REACT.has(p.mode)) {
         if (!reactSince.has(p.id)) reactSince.set(p.id, t);
-        const cause = s.heat > 0 || s.gun || s.crowd || (s.crimes > (D._crimes0 ?? 0) && t - lastCause < 25);
+        // (a dash clear of a car has its cause in the car: O2's traffic)
+        const cause = s.heat > 0 || s.gun || s.crowd || (s.crimes > (D._crimes0 ?? 0) && t - lastCause < 25) || (p.mode === 'dash' && s.cars.some((c) => c.v > 1.5));
         if (!cause) noCause.add(p.id + ':' + p.mode);
         if (t - reactSince.get(p.id) > 40 && !(s.heat > 0 || s.gun || s.crowd)) outlived.add(p.id + ':' + p.mode);
       } else reactSince.delete(p.id);

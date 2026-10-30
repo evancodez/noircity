@@ -74,12 +74,19 @@ export class StandinHands {
     const gun = this.gunOut;
     // (the gun's rounds kept in the coat's count as they go: a draw again loads what is left - O4's arms)
     if (W.current === 'revolver' && W.active && Number.isFinite(W.active.pocket)) { const A = wallet(G).ammo; A.revolver = W.active.pocket; A.revolverIn = W.active.ammo; }
+    // [manager, after the propagation test] the gun that went under the arm on its own (the idle rule below)
+    // left the controller in the gun mode with nothing in hand (LMB did nothing, the wheel's next turn went
+    // to the fists) and the idle count stood: the next draw was put away the moment it was ready. A fresh
+    // draw starts the count again; a gun gone on its own is the fists and the walk, as the wheel's holster is.
+    if (gun && !this.gunWas) this.gunIdle = 0;
+    this.gunWas = gun;
+    if (!gun && C.mode === 'gun' && W.current == null) { arms(G).to('fists'); H.equip('empty'); G.setViewmodelVisible(false); C.setMode('walk', { crouch: false }); G.emit('city:arms', { gun: 'fists' }); }
     // [manager, after O7] RMB no longer draws: the wheel does (city.js [O7], O4's arms; the title's keys line:
     // 'WHEEL the revolver, RMB steady'); with nothing drawn RMB is O7's jab (night/fist.js)
     if (gun) {
       if (G.held('Mouse2') || G.pressed('Mouse0')) this.gunIdle = 0; else this.gunIdle += dt;
       const R = W.active;
-      if (this.gunIdle > 6 && R.phase === 'ready' && R.holster) R.holster();
+      if (this.gunIdle > 6 && R.phase === 'ready' && R.holster) { R.holster(); this.gunIdle = 0; }
       // a gun pointed at people: they run; a cop who sees it: HEAT 1
       this.menaceT -= dt;
       if (this.menaceT <= 0) { this.menaceT = 1.2; this.menace(false); }

@@ -29,7 +29,7 @@ const BY_CTX = {
   // (the fist fight: LMB is the left fist, RMB the right - each trigger the fist on its side)
   brawl: { LMB: 'L2', RMB: 'R2' },
   // (the car: R2 the throttle, L2 the brake, L1 leans out to aim, R1 fires)
-  drive: { W: 'R2', S: 'L2', RMB: 'L1', LMB: 'R1', F: 'dright' },   // [O7] (F in the car: the radio, the d-pad's right)
+  drive: { W: 'R2', S: 'L2', RMB: 'L1', LMB: 'R1', F: 'dright', V: 'Rstick' },   // [O7] (F in the car: the radio, the d-pad's right); [O2] V the view: R3
 };
 export function glyphOf(token, ctx = 'play') {
   const T = String(token).toUpperCase().replace(/\s+/g, '');

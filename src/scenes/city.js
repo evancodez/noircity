@@ -5,6 +5,12 @@ import { STARTS, START_DEFAULT, PAVE, RIVER, QUAY_OFF, SLIPS, PIERS, BRIDGE } fr
 import { riverNearest } from '../world/cityGen.js';
 import { MapOverlay } from '../world/map.js';
 import { compileAll } from '../stages/noircity/compile.js';
+// [O2] the wheels: the traffic, the parked cars, the tram, the hijack (src/traffic/, src/vehicles/)
+import { Wheels } from '../traffic/index.js';
+import { KINDS } from '../vehicles/kinds.js';
+import { cockpitInto, cockpitOut, screenBasis } from '../vehicles/cockpit.js';
+import { watchDamage } from '../vehicles/damage.js';
+import { Chase } from '../vehicles/chase.js';   // [O2] V: the view behind the car
 import { installPeople } from '../people/index.js';   // [O3]
 import { swimStep } from '../world/swim.js';
 import { placesOf } from '../places/Places.js';   // [O5] the places: their doors, their rooms
@@ -60,6 +66,18 @@ function seatOpts() {
   return { eye: new THREE.Vector3(ex ?? CITY_SEAT.eye.x, ey ?? CITY_SEAT.eye.y, CITY_SEAT.eye.z), fov: fov || CITY_SEAT.fov, pitch: pitch ?? CITY_SEAT.pitch };
 }
 
+// [O2] the wheels of this stage: made once (the parked cars chosen, the signals,
+// the tram); in shot mode only with &traffic=1 (the golden frames are the
+// city's own, without them), &traffic=0 never
+function wheelsFor(G, stage) {
+  const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+  const want = q && q.get('traffic');
+  if (want === '0' || (G.shotMode && want !== '1')) return null;
+  if (G.wheels && G.wheels.stage !== stage) { G.wheels.dispose(); G.wheels = null; }
+  if (!G.wheels) G.wheels = new Wheels(G, stage);
+  return G.wheels;
+}
+
 function startOf() {
   const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
   const id = q && q.get('at');
@@ -71,10 +89,17 @@ function place(ctx, at) {
   const G = ctx.game, stage = ctx.stage;
   const V = G.vehicles;
   const R = G.city || (G.city = {});
+  // [O2] the wheels (made once a stage): what they hold is let go before the
+  // vehicles are cleared, and taken up again after (the traffic anew round the eye)
+  const W = wheelsFor(G, stage);
+  if (W) W.detach();
   V.clear();
   stage.part('stream').warmAround(at.car.x, at.car.z);
   if (stage.part('dressing')) stage.part('dressing').warmAround(at.car.x, at.car.z);   // [O1b]
-  const car = V.spawn(at.kind || 'coupe', { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true });   // [O7] (a save's kind)
+  // [O2] (look development: &ckind=<kind> - the start's car of the fleet's kind instead of the coupe; [O7] a save's kind)
+  const ck = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('ckind') : null;
+  const kind = ck && KINDS[ck] ? ck : (at.kind || 'coupe');
+  const car = V.spawn(kind, { at: new THREE.Vector3(at.car.x, 0, at.car.z), yaw: at.carYaw, lights: true, fleet: !!(ck && KINDS[ck]) });
   car.driver = null;
   V.player = null;
   R.car = car;
@@ -91,14 +116,19 @@ function place(ctx, at) {
   R.stream = stage.part('stream');
   // [O5] the places (src/places/): loaded as I come near their doors
   R.places = placesOf(G, stage);
+  if (W) W.attach(R.car);
   // (every program the city draws with, compiled under the fade in: none met first down a street)
+  // [O2] (the wheels' programs too: every kind's car, the parked instances, the cockpit, the fares'
+  // people - shown for the compile below, then put away)
+  const seatWarm = !G.shotMode && !stage._seatWarm && G.pipeline && G.pipeline.renderer;
+  if (!G.shotMode && W && (seatWarm || !stage._compiled)) W.warm();
   // [O1b] (the performance audit's lever 3: the first E into the car made a
   // program and uploaded the seat's geometries in its frame - 108 and 127 ms.
   // The seat taken once now, under the fade in: the hands on the wheel, the
   // screen's drops, compiled and drawn into a scrap target, then let go)
   // [O7] (its own flag: the title's backdrop compiles the city's stage at load - night/title.js -
   // and the seat was skipped with it, so the first E made TailScreen in its frame again: 100+ ms)
-  if (!G.shotMode && !stage._seatWarm && G.pipeline && G.pipeline.renderer) {
+  if (seatWarm) {
     stage._seatWarm = true;
     const r = G.pipeline.renderer;
     // [O7] after the critic (M2: the first E 171 ms): the headlamps' cones and their pool on the road are
@@ -121,6 +151,7 @@ function place(ctx, at) {
     ctx.controller.setPose(at.pos.x, at.pos.z, at.yaw, at.pitch ?? -0.06);   // [O3]
   }
   if (!G.shotMode && !stage._compiled) R.compileMs = compileAll(stage, G);
+  if (W) W.unwarm();
 }
 
 export default defineScene({
@@ -128,13 +159,15 @@ export default defineScene({
   // [O5] hotel: up in my room at the Carlton (the save the bed writes; CONTINUE);
   // station: on the cell's bench at headquarters (the arrest's wake: O3);
   // wake: up after a fall in a place (G.city.wake: outside its door, or by the gym's ring), the car where I left it
-  // [O7, O3] hospital: after a fall in the street (shot, beaten, the bounty's man: a fight lost to
-  // anyone but the police): up on the pavement by my car where I left it - O4's rules (fall.js: the
-  // stitches' cost) - until O5b's hospital door is built
-  beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital'],
+  // [O7] hospital: after a fall in the street (the bounty's man, a fight lost to anyone but the police):
+  // [O5b] the hospital's door is built: up in the ward's bed by its door ('Came round.', O4's
+  // stitches), my car where I left it; ward: CONTINUE after a sleep in a ward's bed
+  beats: ['roam', 'ashore', 'hotel', 'station', 'wake', 'hospital', 'ward'],
   // (M is the map here: Game.bindInput leaves the sound alone)
   mapKey: true,
-  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null },
+  objectives: { roam: null, ashore: null, hotel: null, station: null, wake: null, hospital: null, ward: null },   // [O5b] (ward)
+  // [O2] a fall in the street to the wheels' men (the gang's gunmen at the glass): the hospital and its words
+  onDown: (ctx) => (ctx.game.wheels && ctx.game.wheels.downSpec ? ctx.game.wheels.downSpec() : null),
   // [O6] the low line when the destruction set hurt him (the fire, the tram): its fix, not the gun kit's
   lowWarn: (ctx) => (ctx.stage.smash && ctx.stage.smash.cars.lowWarn()) || null,
   setup: {
@@ -156,7 +189,8 @@ export default defineScene({
         const G = ctx.game, R = G.city;
         G.vehicles.setPlayer(R.car);
         if (R.car.lamps && R.car.lamps.setOn) R.car.lamps.setOn(true);
-        R.cabin.attach(R.car, { ...seatOpts(), control: brakesFor(G) });
+        // [O2] (a fleet car: its seat, its cockpit, its screen; the view behind it)
+        takeSeat(ctx, R, R.car);
         R.inCar = true;
         return;
       }
@@ -210,15 +244,31 @@ export default defineScene({
       P.wakeAfter(W);
       R.wake = null;
     },
-    // [O7, O3] up after a fall in the street: by my car where I left it (or at Grand Ave's kerb), the stitches paid
+    // [O7] up after a fall in the street, the stitches paid
+    // [O5b] in the hospital's ward (src/places/rooms/hospital.js): the bed by the door, 'Came round.', my car
+    // where I left it (or, gone or burnt out, at the hospital's kerb)
     hospital(ctx) {
-      const G = ctx.game, R = G.city || (G.city = {});
+      const G = ctx.game, R = G.city || (G.city = {}), P = placesOf(G, ctx.stage), s = P.byId.get('hospital');
       const car = R.car && R.car.solid !== false && !R.car.wrecked ? { x: R.car.pos.x, z: R.car.pos.z, yaw: R.car.yaw, kind: R.car.kind } : null;
       if (car) place(ctx, { car: { x: car.x, z: car.z }, carYaw: car.yaw, kind: car.kind, pos: { x: car.x + Math.sin(car.yaw) * 2.4, z: car.z + Math.cos(car.yaw) * 2.4 }, yaw: car.yaw - Math.PI / 2 });
+      else if (s) { const k = s.frame.w(-5.5, 4.9); place(ctx, { car: k, carYaw: s.frame.yaw(Math.PI / 2), pos: s.frame.w(-5.5, 2.4), yaw: 0 }); }
       else { const a = ctx.stage.anchor('city.start.grand'); place(ctx, { car: a.car, carYaw: a.carYaw, pos: a.pos, yaw: a.yaw }); }
+      if (s) {
+        P.wake('hospital', 'fall');
+        // [O3] the police reset (People.afterFail); the room's wake paid the stitches and said its line
+        if (G.people) G.people.afterFail('hospital', { room: true });
+        return;
+      }
       // [O3] the police reset and the stitches paid once (People.afterFail: O4's fall.js); the words
       if (G.people) G.people.afterFail('hospital');
       else { const r = fallWake(G, 'hospital'); G.hud.message(r.line, 3.0); }
+    },
+    // [O5b] a ward's bed wrote the save: CONTINUE wakes me in it, the car at the hospital's kerb
+    ward(ctx) {
+      const P = placesOf(ctx.game, ctx.stage), s = P.byId.get('hospital');
+      const k = s ? s.frame.w(-5.5, 4.9) : { x: -205, z: 13 };
+      place(ctx, { car: k, carYaw: s ? s.frame.yaw(Math.PI / 2) : Math.PI / 2, pos: s ? s.frame.w(-5.5, 2.4) : k, yaw: 0 });
+      P.wake('hospital', 'ward');
     },
     // out of the river: on the quay at the nearest steps, a car at the kerb by them
     ashore(ctx) {
@@ -236,6 +286,8 @@ export default defineScene({
     R.map.close();
     installPeople(ctx);   // [O3] the crowd, the police, the gangs
     const T = { foot: 0, drive: 0, dist: 0, near: false };
+    // [O2] the hijack gets me in (and out) of any car the way the free roam does
+    if (G.wheels) { G.wheels.enter = (car) => getIn(ctx, R, T, car); G.wheels.exit = (car) => { if (R.inCar && R.car === car) getOut(ctx, R, T); }; }
     ctx.onStep((dt) => step(ctx, R, T, dt));
     for (;;) yield null;
     void hud;
@@ -248,6 +300,8 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   if (G.failing || G.state !== 'playing') return;
   // [O5] the places: loaded and dropped, their doors and their life
   if (R.places) R.places.step(dt);
+  // [O2] the city's wheels go on (the traffic, the tram, the parked, the hijack)
+  if (G.wheels && G.wheels.stage === ctx.stage) G.wheels.step(dt);
   const car = R.car;
   // the warning before the river (WAVE_C §1 rule 2): on a slipway's ramp, or
   // near a pier's open end - in the car at least 1.6 s ahead at its speed
@@ -280,6 +334,10 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     T.drive += dt;
     T.dist += Math.abs(car.speed) * dt;
     R.cabin.step(dt);
+    // [O2] V (the pad's R3): the view - the seat, or behind the car (remembered in the save)
+    if (ctx.pressed('KeyV') && R.chase) { R.chase.toggle(); if (!T.viewTold && R.chase.want) T.viewTold = true; }
+    // [O2] Q: the horn (the car ahead pulls over; the others answer)
+    if (ctx.pressed('KeyQ')) { G.sfx.play('tail_horn', car.seat(_v.set(2, 1, 0), new THREE.Vector3()), { k: 1, dur: 0.5, low: car.model && car.model.K && car.model.K.note < 0.9 ? 1 : 0 }, { ref: 3 }); if (G.wheels) G.wheels.traffic.horn(car); G.emit('city:horn', { car }); }
     // the river: the car in the water is lost ([O6b] it drops, the splash, the water
     // closing over it - then the words; stage.smash.cars.sink)
     if (C.inWater(car.pos.x, car.pos.z) || R.sinkT) {
@@ -295,21 +353,28 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // gone a few lengths, or its time
     if (T.drive > 0.4 && !T.driveCard) { const c0 = car.stats.crashes + car.stats.scrapes; T.driveCard = hud.teach('city_drive', '[W] drive  [S] brake  [SPACE] handbrake', { until: () => T.dist > 9 || car.stats.crashes + car.stats.scrapes > c0, secs: 5 }); }   // ([O6b] the cold play's m7: gone once she moves off - never up into the first ram)
     if (T.drive > 25 && !T.taughtMap && !T.warned) { T.taughtMap = true; hud.teach('city_map', '[M] the map'); }
+    // [O2] the view behind the car, once, in a quiet second of a drive (never over another card)
+    if (T.drive > 50 && T.dist > 300 && !T.taughtView && !T.warned && !hud.kit.teachCur && !(R.chase && R.chase.want)) { T.taughtView = true; hud.teach('city_view', '[V] the view', { until: () => R.chase && R.chase.want, secs: 4 }); }
+    // [O2] a thing to do wants E here (the garage's door, the race's line, a fare): not out
+    const claimed = G.wheels && G.wheels.claimsE(ctx, R);
+    if (claimed && T.outShown) { T.outShown = false; hud.clearPrompt('cityout'); }
     // E, moving: the brakes go on and I get out as it stops (W again
     // changes my mind) - E acts on the press (the critic's m3)
-    if (ctx.pressed('KeyE') && T.drive > 0.6) R.wantOut = true;
+    if (!claimed && ctx.pressed('KeyE') && T.drive > 0.6) R.wantOut = true;
     if (R.wantOut && (ctx.pressed('KeyW') || ctx.pressed('ArrowUp'))) R.wantOut = false;
     if (R.wantOut && slow) { R.wantOut = false; getOut(ctx, R, T); return; }
     // 'E get out' once the car has been driven and stands (or after a while
     // in the seat), never under a card
-    const out = slow && !R.wantOut && (T.dist > 4 || T.drive > 8) && (!T.driveCard || T.driveCard.done);
+    const out = slow && !R.wantOut && !claimed && (T.dist > 4 || T.drive > 8) && (!T.driveCard || T.driveCard.done);
     if (out !== !!T.outShown) { T.outShown = out; if (out) hud.prompt('E  get out', null, 'cityout'); else hud.clearPrompt('cityout'); }
     return;
   }
   T.foot += dt;
+  // [O2] a fist fight on the pavement (a driver who came back for his car): no car's E under it
+  if (G.brawl && G.brawl.active) { if (T.inShown) { T.inShown = false; hud.clearPrompt('cityin'); } if (T.door) { T.door = null; hud.clearPrompt('citydoor'); } return; }
   // the car I left rolls out what was left of its roll, its brakes on, and
   // stands (nothing else steps a parked car yet: O2's traffic will)
-  if (car && !R.inCar && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
+  if (car && !R.inCar && !G.wheels && (car.vel.lengthSq() > 4e-4 || Math.abs(car.yawRate) > 0.01)) car.step(dt);
   // on foot: the river (walked off a pier's end, down a slipway, the steps):
   // [O1b] a swim to the steps (world/swim.js), never the fade; [O6b] the ink splash where he went in
   const swims = R.swim ? R.swim.n : 0;
@@ -330,7 +395,7 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   let near = false, nearCar = null, nearD = Infinity;
   const f = G.camera.getWorldDirection(new THREE.Vector3()), fl = Math.max(1e-3, Math.hypot(f.x, f.z));
   for (const cv of G.vehicles.list) {
-    if (!cv || cv.solid === false || cv.wrecked || cv.driver || cv === G.vehicles.player) continue;   // [O6] (a burnt wreck is no car to get into)
+    if (!cv || cv.solid === false || cv.wrecked || cv.driver || cv === G.vehicles.player || cv.racer || cv.stored) continue;   // [O6] (a burnt wreck is no car to get into); [O2] (a racer waiting at the kerb has his man in it; a car going into the garage is the garage's)
     const l = cv.local(ctl.pos, _v);
     const db = Math.hypot(Math.max(0, Math.abs(l.x) - cv.spec.halfL), Math.max(0, Math.abs(l.z) - cv.spec.halfW));
     // (within a stride of its body: 2.5 m, the starts' place behind its tail included)
@@ -340,6 +405,12 @@ export function step(ctx, R, T, dt) {   // [O6] exported
     // the eye's, up and down too: not above the roof line)
     if (((toX * f.x + toZ * f.z) / (tl * fl) > 0.35 && f.y < 0.62) || db < 0.5) { nearCar = cv; nearD = db; }
   }
+  // [O5b] a locked car (the hospital's ambulance: its seat has no view to drive by) is no car to get
+  // into: E tries its door - the rattle, 'locked' - as a street door's
+  let lockedCar = null;
+  if (nearCar && nearCar.locked) { lockedCar = nearCar; nearCar = null; }
+  if (!!lockedCar !== !!T.lkShown || (lockedCar && hud.promptOwner !== 'citylk')) { T.lkShown = !!lockedCar; if (lockedCar) hud.prompt('E  try the door', null, 'citylk'); else hud.clearPrompt('citylk'); }
+  if (lockedCar && ctx.pressed('KeyE')) { G.sfx.play('f_c4rattle', new THREE.Vector3(lockedCar.pos.x, 1.2, lockedCar.pos.z)); hud.message('locked', 1.2); G.emit('city:locked', { car: lockedCar }); return; }
   near = !!nearCar;
   // E at the car: the teach card the first time (the key drawn; it goes when
   // I look away), the plain prompt after it - never both (the critic's M1)
@@ -349,7 +420,9 @@ export function step(ctx, R, T, dt) {   // [O6] exported
   // ([O7] after the critic, m3: turned back to the car after getting out, no prompt - another's prompt
   // was up when it came, and it was never asked again: asked each step until it shows)
   if (inP !== !!T.inShown || (inP && hud.promptOwner !== 'cityin')) { T.inShown = inP; if (inP) hud.prompt('E  get in', null, 'cityin'); else hud.clearPrompt('cityin'); }
-  if (near && ctx.pressed('KeyE')) { if (nearCar !== R.car) { R.car = nearCar; G.emit('city:mycar', { car: nearCar }); } getIn(ctx, R, T); return; }
+  if (near && ctx.pressed('KeyE')) { getIn(ctx, R, T, nearCar); return; }   // ([O2] getIn makes it my car: city:mycar)
+  // [O2] any other car: mine (left), parked (broken into), driven (taken) - vehicles/hijack.js
+  if (!near && G.wheels && G.wheels.hijack.footStep(ctx, R)) { if (T.door) { T.door = null; hud.clearPrompt('citydoor'); } return; }
   // [O7] after the critic (B3: LMB on foot with empty hands did nothing): the bare hand's LMB / RMB throws
   // O4's jab on the press - the hands, the whiff; on a man in reach, the fight (fist.js)
   if (fistStep(ctx, R)) return;
@@ -385,20 +458,58 @@ export function holster(ctx) {
   G.emit('city:arms', { gun: 'fists' });
 }
 
-export function getIn(ctx, R, T) {   // [O6] exported
-  const G = ctx.game, car = R.car;
+export function getIn(ctx, R, T, car = R.car) {   // [O6] exported
+  const G = ctx.game, W = G.wheels;
   if (gunOut(G)) holster(ctx);   // [O7]
+  // [O2] a car taken (parked, pulled from its driver, one I left): it is my car now;
+  // the one before it stays where I left it
+  if (car !== R.car) { if (W && R.car && !W.left.some((L) => L.v === R.car)) W.leave(R.car); R.car = car; G.emit('city:mycar', { car }); }
+  ctx.hud.clearPrompt('o2car');
   ctx.hud.clearPrompt('cityin');
   T.near = false; T.inShown = false; T.drive = 0; T.dist = 0; T.outShown = false; R.wantOut = false;
   G.vehicles.setPlayer(car);
   car.input.hold = 0;   // [O6] (my S reverses again)
+  if (W) { W.ownLamps(car); W.took(car); watchDamage(W, car); W.watch(car); }
   if (car.lamps && car.lamps.setOn) car.lamps.setOn(true);
   // (eased into the seat: the camera never jumps)
-  R.cabin.attach(car, { ease: 0.35, ...seatOpts(), ...(car.seatOpts || {}), control: brakesFor(G) });   // [O6] (car.seatOpts: another kind's seat)
+  // [O2] a car of the fleet: its own seat, the cockpit put in it, the screen's rain in its screen;
+  // [O6] (car.seatOpts: another kind's seat); the view behind it as the save has it
+  takeSeat(ctx, R, car, { ease: 0.35 });
   R.inCar = true;
   G.sfx.play('tail_door', null, { open: false });
   ctx.stage.part('bounds').navAround(car.pos.x, car.pos.z, 14);
   G.emit('city:in', { car });
+}
+
+// [O2] the seat of the car I am in (a fleet car's own eye, its cockpit, its screen) and the
+// view behind it (V, the pad's R3: vehicles/chase.js), eased in as the save remembers it
+function takeSeat(ctx, R, car, extra = {}) {
+  const G = ctx.game;
+  const fleet = car.model && car.model.fleet;
+  const seat = fleet ? { ...seatOpts(), eye: KINDS[car.kind].eye.clone() } : seatOpts();
+  if (fleet) cockpitInto(ctx.stage, car);
+  const C = R.chase || (R.chase = new Chase(G));
+  C.begin(car);
+  // (look development and the fps table: &carview=third - the view behind from the first frame)
+  if (typeof location !== 'undefined' && new URLSearchParams(location.search).get('carview') === 'third') C.want = true;
+  // (the man is in the seat whatever the view: G.eye there for what sees, shoots at and hears him)
+  const eyeL = seat.eye.clone();
+  G.eyeFix = (e) => { const Rc = G.city; if (Rc && Rc.inCar && Rc.chase && Rc.chase.k > 0 && Rc.car === car) car.seat(eyeL, e); };
+  C.onSwap = (third, v) => showSeat(ctx, R, v, !third);
+  R.cabin.attach(car, { ...seat, ...(car.seatOpts || {}), ...extra, control: brakesFor(G),
+    view: (ctl, D, v, dt) => C.apply(ctl, D, v, dt),
+    lookAround: (e, ctl) => { if (!(C.want && C.k > 0.5)) return false; C.mouse(e.movementX, e.movementY, ctl.sensitivity); return true; } });
+  R.cabin.eye = fleet ? seat.eye : null;
+  if (fleet) R.cabin.screen.mesh.matrix.copy(screenBasis(car.kind));
+}
+// the seat shown (the cockpit, the hands on the wheel, the rain on the screen), or the car whole from behind
+function showSeat(ctx, R, car, seat) {
+  const G = ctx.game, m = car && car.model;
+  if (!m) return;
+  if (m.fleet) { if (seat) cockpitInto(ctx.stage, car); else cockpitOut(ctx.stage, car); }
+  G.setViewmodelVisible(seat);
+  if (R.cabin.screen && R.cabin.screen.mesh) R.cabin.screen.mesh.visible = seat;
+  if (m.meshes && m.meshes.bust) m.meshes.bust.visible = !seat;
 }
 
 export function getOut(ctx, R, T) {   // [O6] exported
@@ -431,8 +542,15 @@ export function getOut(ctx, R, T) {   // [O6] exported
   G.setViewmodelVisible(false);
   // (looking along the car, away from its door: eased out of the seat)
   const yaw = car.yaw - Math.PI / 2;
+  const chased = R.chase && R.chase.k > 0, from = chased ? ctx.controller.eyePose() : null;
   ctx.controller.setMode('walk', { pose: { x: d.p.x, z: d.p.z, yaw, pitch: -0.05 }, ease: 0.4 });
+  // [O2] (from behind the car the eye is metres off the door - the controller's blend cuts a
+  // move that long: it is made again here, from the view behind, so it is never a cut)
+  if (chased) { ctx.controller._modeBlend = { from, t: 0, dur: 0.6, checked: true }; ctx.controller.apply(0); if (R.cabin.screen && R.cabin.screen.mesh) R.cabin.screen.mesh.visible = true; if (car.model && car.model.meshes && car.model.meshes.bust) car.model.meshes.bust.visible = false; R.chase.end(); }
   if (R.cabin.car) { R.cabin.dispose(); }
+  // [O2] the car stays where I left it (the wheels keep it); a fleet car shut again
+  cockpitOut(ctx.stage, car);
+  if (G.wheels) G.wheels.leave(car);
   G.sfx.play('tail_door', null, { open: true });
   ctx.stage.part('bounds').navAround(d.p.x, d.p.z, 14);
   T.foot = 0;
@@ -455,7 +573,8 @@ function wet(ctx, R, at, why) {
 // kerb down the street
 const HOSPITAL = { x: -36.5, z: 66 };
 // [O3] the arrest's wake in O5's cell (false: the pavement at the headquarters' door - see the station beat)
-const STATION_CELL = false;
+// [O5b] true: the cell's bench faces its bars and the corridor's lamp (it faced its own wall: the black)
+const STATION_CELL = true;
 function wakeAt(ctx, what) {
   const stage = ctx.stage, C = stage.part('city').C, g = stage.part('city').graph;
   let x, z, yaw, pitch = -0.06;

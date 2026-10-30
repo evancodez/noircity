@@ -17,7 +17,24 @@ export default (kit) => {
   };
   const roofRain = (ctx, R, g, srcs, k = 0.07) => { const r = gain(ctx, k); chain(loopN(ctx, R, 'pink', 0.9, srcs), filt(ctx, 'lowpass', 1600), filt(ctx, 'highpass', 200), r, g); lfo(ctx, 0.07, k * 0.3, r.gain, 'sine', srcs); };
   return {
-    sounds: {},
+    sounds: {
+      // [O5b] a piano's note, a little out of tune (the bar's pianist; the piano tried): two strings
+      // a few cents apart and a third a hair flat, the hammer's knock, a quick fall and a long ring
+      o5b_piano(ctx, out, t0, p) {
+        const f = p.f || 220, k = p.k ?? 0.5, det = 1 + (p.out || 0);
+        const g = gain(ctx, 0); g.connect(out);
+        g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.22 * k, t0 + 0.004); g.gain.setTargetAtTime(0.07 * k, t0 + 0.01, 0.09); g.gain.setTargetAtTime(0, t0 + 0.25, 0.5);
+        const lp = filt(ctx, 'lowpass', Math.min(5200, f * 7)); lp.connect(g);
+        const stop = t0 + 2.4;
+        for (const [m, type, a] of [[1, 'triangle', 0.6], [1.006 * det, 'triangle', 0.45], [2.0, 'sine', 0.18], [0.994, 'sawtooth', 0.08]]) {
+          const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f * m, t0);
+          const og = gain(ctx, a); o.connect(og); og.connect(lp); o.start(t0); o.stop(stop);
+        }
+        // the hammer's knock
+        const n = ctx.createBufferSource(); const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.03), ctx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+        n.buffer = b; const ng = gain(ctx, 0.05 * k); n.connect(filt(ctx, 'bandpass', 1800, 1.2)).connect(ng); ng.connect(out); n.start(t0);
+      },
+    },
     rooms: {
       o5_gym: { wall: 520, wallGain: 0.22, bed(ctx, R, out) {
         const g = gain(ctx, 0.0001), srcs = []; g.connect(out);

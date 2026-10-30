@@ -45,15 +45,19 @@ async function tour(api) {
   for (const id of ids) {
     const r = { id, uses: [], jank: [] };
     // stand 3 m out from the door, facing it; the car parked behind me at the kerb
+    // [O5b] (its loads counted from its own turn: a place seen from further off - the hospital, 80 m - is loaded passing another's door)
+    await js(`(window.__o5.loads[${JSON.stringify(id)}] = (G.city.places.byId.get(${JSON.stringify(id)}).live ? 1 : 0), 1)`);
     const setup = await js(`(() => { const P = G.city.places, s = P.byId.get(${JSON.stringify(id)}); const d = s.door;
       const x = d.x + d.nx * 3.0, z = d.z + d.nz * 3.0; G.stage.part('stream').warmAround(x, z);
-      N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), -0.05);
+      N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), 0.12);   // [O5b] (looking at the door, not at a thing on the pavement before it)
       const c = G.city.car; if (c && !G.city.inCar) { c.pos.set(x + d.nx * 2.2 + d.nz * 2.0, 0, z + d.nz * 2.2 - d.nx * 2.0); c.vel.set(0, 0, 0); c.sync && c.sync(); }
       window.__o5.carAt = c ? [c.pos.x, c.pos.z] : null; window.__o5.crimes0 = window.__o5.crimes; return { x, z }; })()`);
     await sleep(2200);
     // E at the door: the latency to the leaf's first move
     await js(`(() => { const s = G.city.places.byId.get(${JSON.stringify(id)}); const D = s.live && s.live.street && s.live.street[0]; window.__o5.watch = D ? { door: D } : null; return !!D; })()`);
-    const prompt = await js('G.hud.promptShown');
+    let prompt = await js('G.hud.promptShown');
+    // [O5b] (a thing of O1b's lying on the step takes the first E - the Docks bar's: 'take' - then the door's)
+    if (prompt && !/go in|open|try the door/.test(prompt)) { r.firstE = prompt; await press(api, 'KeyE'); await sleep(700); prompt = await js('G.hud.promptShown'); }
     await press(api, 'KeyE');
     await sleep(500);
     const lat = await js('(() => { const W = window.__o5.watch; return W ? { ms: W.t1 != null ? +(W.t1 - W.t0).toFixed(1) : null, frames: W.frames ?? null, open: +W.door.angle.toFixed(2) } : null; })()');
@@ -66,8 +70,8 @@ async function tour(api) {
     const things = await js(`(() => { const s = G.city.places.byId.get(${JSON.stringify(id)}); const K = s.live.K, F = s.frame;
       const L = [];
       for (const D of K.doors) L.push({ kind: 'door', name: D.name, at: [D.centre.x, D.centre.y + 0.2, D.centre.z], lvl: D.lvl, street: !!D.street });
-      K.seats.forEach((S, i) => { if (S.tourSkip) return; const a = S.at ? F.v(S.at[0], S.at[1], S.at[2]) : F.v(S.x, S.eyeY - 0.5, S.z); L.push({ kind: 'seat', name: S.name || ('seat' + i), at: [a.x, a.y, a.z], lvl: S.lvl, i }); });
-      K.uses.forEach((U, i) => { if (U.seated || U.atFn || U.tourSkip) return; const a = F.v(U.at[0], U.at[1], U.at[2]); L.push({ kind: 'use', name: typeof U.prompt === 'string' ? U.prompt : ('use' + i), at: [a.x, a.y, a.z], lvl: U.lvl, i }); });
+      K.seats.forEach((S, i) => { if (S.tourSkip) return; const a = S.at ? F.v(S.at[0], S.at[1], S.at[2]) : F.v(S.x, S.eyeY - 0.5, S.z); L.push({ kind: 'seat', name: S.name || ('seat' + i), at: [a.x, a.y, a.z], lvl: S.lvl, i, tour: S.tourAt || null }); });
+      K.uses.forEach((U, i) => { if (U.seated || U.atFn || U.tourSkip) return; const a = F.v(U.at[0], U.at[1], U.at[2]); L.push({ kind: 'use', name: typeof U.prompt === 'string' ? U.prompt : ('use' + i), at: [a.x, a.y, a.z], lvl: U.lvl, i, tour: U.tourAt || null }); });
       return L; })()`);
     for (const th of things) {
       if (th.lvl != null && th.lvl > 0) { r.uses.push({ ...th, skipped: 'upstairs (the floor plays)' }); continue; }
@@ -77,6 +81,8 @@ async function tour(api) {
         let dx = c.x - t.x, dz = c.z - t.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
         let px = t.x + dx * 1.25, pz = t.z + dz * 1.25;
         px = Math.max(R.x0 + 0.35, Math.min(R.x1 - 0.35, px)); pz = Math.max(R.z0 + 0.35, Math.min(R.z1 - 0.35, pz));
+        // [O5b] (a thing out of the room's main rect - the diner's jukebox, a cell's bench, a ward's bed - says where to stand: tourAt)
+        const ta = ${JSON.stringify(th.tour)}; if (ta) { px = ta[0]; pz = ta[1]; }
         const w = F.w(px, pz), q = { x: w.x, z: w.z }; G.stage.colliders.resolve(q, 0.3);
         const ey = 0.3 + 1.63, yaw = Math.atan2(-(${th.at[0]} - q.x), -(${th.at[2]} - q.z)), pitch = Math.atan2(${th.at[1]} - ey, Math.hypot(${th.at[0]} - q.x, ${th.at[2]} - q.z));
         if (G.city.places.seat) G.city.places.stand();
@@ -87,7 +93,10 @@ async function tour(api) {
       await press(api, 'KeyE');
       await sleep(900);
       const after = await js(`(() => { const s = G.city.places.byId.get(${JSON.stringify(id)}); const D = ${th.kind === 'door' ? `s.live.K.doors.find((d) => d.name === ${JSON.stringify(th.name)})` : 'null'};
-        return { msg: window.__o5.lastMsg, money: (G.save.money || 0) - window.__o5.m0, seated: !!G.city.places.seat, mode: N.controller.mode, door: D ? { open: !D.shut, locked: D.locked } : null }; })()`);
+        return { msg: window.__o5.lastMsg, money: (G.save.money || 0) - window.__o5.m0, seated: !!G.city.places.seat, mode: N.controller.mode, door: D ? { open: !D.shut, locked: D.locked } : null, card: !!(G.night && G.night.bounty && G.night.bounty.open), sleep: !!G.city.places.sleeping }; })()`);
+      // [O5b] (the hall's board opens the WANTED card: put back by E; a ward's bed is a sleep: 4 s of black)
+      if (after.card) { after.msg = 'the WANTED card'; await press(api, 'KeyE'); await sleep(600); }
+      if (after.sleep) { after.msg = 'a sleep (Slept. Saved.)'; for (let k = 0; k < 20 && (await js('!!G.city.places.sleeping')); k++) await sleep(400); }
       const answer = after.door ? (after.door.locked ? `rattles, locked${after.msg ? ' (' + after.msg + ')' : ''}` : after.door.open ? 'opens' : 'shuts') : after.seated ? 'sat' : after.msg ? after.msg : after.money ? `$${after.money}` : (after.mode !== 'walk' ? after.mode : 'nothing seen');
       r.uses.push({ kind: th.kind, name: th.name, prompt: before.prompt || before.cur, answer });
       log(`  ${id} ${th.kind} ${th.name}: [${before.prompt || before.cur || 'no prompt'}] -> ${answer}`);

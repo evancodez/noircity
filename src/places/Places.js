@@ -31,7 +31,7 @@ const LOAD = 34, DROP = 62;
 // a fist at a room's people (OPEN_WORLD's havoc: the room answers): who fights back, as O4's
 // kind of man; everyone else flinches, says his word and cowers, and the room turns
 const FIGHTS = { drunkA: 'drunk', drunkB: 'drunk', trainer: 'driver', sitter: 'driver', mechanic: 'driver', grocer: 'driver', supper: 'drunk' };
-const OUCH = { barman: 'Out. Now.', waitress: 'Hey!', cashier: 'Hey! Somebody!', usher: 'Out you go.', clerk: 'Mister!', promoter: 'In the ring. Not out here.',
+const OUCH = { pianist: 'Not the hands!', nurse: 'Not in my hospital!', barman: 'Out. Now.', waitress: 'Hey!', cashier: 'Hey! Somebody!', usher: 'Out you go.', clerk: 'Mister!', promoter: 'In the ring. Not out here.',
   gunman: 'Wrong shop for that.', cook: 'Hey!', sergeant: 'You want a cell? Keep going.', drunk: 'Whassat for?' };
 const ROOMS = {};
 for (const m of Object.values(import.meta.glob('./rooms/*.js', { eager: true }))) if (m.default && m.default.kind) ROOMS[m.default.kind] = m.default;
@@ -177,8 +177,60 @@ export class Places {
     // the room's own life (a bout, a fight breaking out, the men of a hideout)
     s.live.run = def && def.live ? def.live(K, s, this) : null;
     s.live.ms = performance.now() - t0;
+    // [O5b] the first open one frame like the second (brief O5b §4): the room's programs compiled now (in
+    // parallel where the GPU can) with the street's lights, then - a step later - one draw of it into a
+    // scrap target (its buffers and its lettering's textures on the GPU): nothing of it is new at the door
+    this.warm(s);
     this.game.emit('places:load', { id: s.id, ms: s.live.ms });
     return s.live;
+  }
+
+  // [O5b] the warm-up: compileAsync of the room (and its outside) against the stage's lights, then one
+  // scrap draw of it (warmDraw, from step, once the programs are ready)
+  lightScene() {
+    const LS = new THREE.Scene(), sc = this.stage.scene;
+    LS.fog = sc.fog; LS.environment = sc.environment;
+    sc.traverseVisible((o) => { if (o.isLight) { const c = o.clone(false); c.layers.mask = o.layers.mask; LS.add(c); } });
+    return LS;
+  }
+  warm(s) {
+    const G = this.game, r = G.pipeline && G.pipeline.renderer, L = s.live;
+    if (!r || !r.compileAsync || G.shotMode) { L.warm = 'skip'; return; }
+    const K = L.K, vis = K.group.visible, P = G.pipeline, prev = r.getRenderTarget();
+    L.warm = 'compiling';
+    K.group.visible = true;
+    try {
+      const LS = this.lightScene();
+      r.setRenderTarget((P && P.rtScene) || prev);
+      const a = r.compileAsync(K.group, G.camera, LS), b = r.compileAsync(K.outer, G.camera, LS);
+      Promise.all([a, b]).then(() => { if (s.live === L) L.warm = 'draw'; }, () => { if (s.live === L) L.warm = 'draw'; });
+    } catch (e) { L.warm = 'draw'; }
+    r.setRenderTarget(prev);
+    K.group.visible = vis;
+  }
+  warmDraw(s) {
+    const G = this.game, r = G.pipeline && G.pipeline.renderer, L = s.live, K = L.K;
+    L.warm = 'done';
+    if (!r) return;
+    const t0 = performance.now();
+    const LS = this.lightScene(), parent = K.group.parent, vis = K.group.visible;
+    const culled = [];
+    LS.add(K.group);
+    K.group.visible = true;
+    K.group.traverse((o) => { if ((o.isMesh || o.isPoints || o.isSprite) && o.frustumCulled) { culled.push(o); o.frustumCulled = false; } });
+    const rt = new THREE.WebGLRenderTarget(16, 16), prev = r.getRenderTarget(), cam = G.camera, mask = cam.layers.mask;
+    const sm = r.shadowMap.autoUpdate; r.shadowMap.autoUpdate = false;
+    cam.layers.enableAll();
+    r.setRenderTarget(rt);
+    try { r.render(LS, cam); } catch (e) { /* its first frame will */ }
+    cam.layers.mask = mask;
+    r.shadowMap.autoUpdate = sm;
+    r.setRenderTarget(prev);
+    rt.dispose();
+    for (const o of culled) o.frustumCulled = true;
+    if (parent) parent.add(K.group);
+    K.group.visible = vis;
+    L.warmMs = performance.now() - t0;
   }
 
   drop(s) {
@@ -359,6 +411,8 @@ export class Places {
     }
     if (D.shut || D.target === 0) {
       D.open(G.controller.pos);
+      // [O5b] (the leaf starts in the frame E was pressed, not the next: GAME_TWO §1 A1)
+      D.update(1 / 60);
       if (D.street) { this.lastDoorT = performance.now(); if (s.live.run && s.live.run.door) s.live.run.door(D); }
     } else D.close();
   }
@@ -405,11 +459,13 @@ export class Places {
     return s;
   }
   // the police's (O3): after an arrest I wake at headquarters, on the cell's bench
-  wake(id = 'police') {
+  wake(id = 'police', how = null) {
+    // [O5b] (woken from anywhere in the city: the street round its door built first)
+    { const s0 = this.byId.get(id), st = this.stage.part('stream'); if (s0 && st && st.warmAround) st.warmAround(s0.door.x, s0.door.z); }
     const s = this.enter(id);
     if (!s) return null;
     const def = ROOMS[s.kind];
-    if (def && def.wake) def.wake(s.live.K, s, this);
+    if (def && def.wake) def.wake(s.live.K, s, this, how);
     return s;
   }
 
@@ -518,6 +574,42 @@ export class Places {
   }
   laterT(secs, fn) { let t = 0; this.later((dt) => { t += dt; if (t < secs) return false; try { fn(); } catch (e) { /* */ } return true; }); }
 
+  // [O5b] a bed's sleep (the hotel's room, a ward's bed: OPEN_WORLD's 'a bed for a man with no
+  // room'): the black, health whole, the heat dies, the night on an hour, the save written at the
+  // city's beat `beat` (CONTINUE wakes me there), 'Slept. Saved.', up again in under 4 s
+  sleepAt(beat, why = 'sleep') {
+    const G = this.game;
+    if (this.sleeping) return;
+    this.sleeping = { t: 0 };
+    const T = { t: 0 };
+    const C = G.controller;
+    C.frozen = true;
+    this.later((dt) => {
+      T.t += dt;
+      if (T.t < 1.0) { G.hud.fade(T.t / 1.0); return false; }
+      if (!T.done) {
+        T.done = true;
+        G.health.reset();
+        if (G.police && G.police.clear) G.police.clear(why);
+        G.emit('heat:clear', { why });
+        G.emit('night:hour', { hours: 1, why });
+        const S = G.scenes, was = S.beat;
+        S.beat = beat;
+        const d = G.save.write();
+        S.beat = was;
+        G.emit('saved', { at: beat, ok: !!d });
+        G.hud.kit.failLine && G.hud.kit.failLine('Slept. Saved.');
+        G.hud.kit.failK && G.hud.kit.failK(1);
+      }
+      if (T.t < 3.0) return false;
+      if (T.t < 3.8) { G.hud.kit.failK && G.hud.kit.failK(0); G.hud.fade(1 - (T.t - 3.0) / 0.8); return false; }
+      G.hud.fade(0); G.hud.kit.failLine && G.hud.kit.failLine(null);
+      C.frozen = false;
+      this.sleeping = null;
+      return true;
+    });
+  }
+
   // a step function run every step until it returns true (a sleep's black, a cut)
   later(fn) { (this.laters || (this.laters = [])).push(fn); }
 
@@ -530,9 +622,12 @@ export class Places {
     for (const s of this.list) {
       const d = Math.hypot(s.door.x - eye.x, s.door.z - eye.z, ...(s.doors.length ? [] : []));
       const dm = Math.min(d, ...s.doors.map((q) => Math.hypot(q.x - eye.x, q.z - eye.z)));
-      if (!s.live && loads === 0 && (G.shotMode ? this.only === s.id : dm < LOAD)) { this.load(s); loads++; }
-      else if (s.live && dm > DROP && this.inside !== s && !(G.shotMode && this.only === s.id)) this.drop(s);
+      // [O5b] (a place seen from down the street - the hospital's globe - loads further out: s.loadR / s.dropR)
+      if (!s.live && loads === 0 && (G.shotMode ? this.only === s.id : dm < (s.loadR || LOAD))) { this.load(s); loads++; }
+      else if (s.live && dm > (s.dropR || DROP) && this.inside !== s && !(G.shotMode && this.only === s.id)) this.drop(s);
     }
+    // [O5b] (the hospital found: within 40 m of its door - the map marks it, as O7's places)
+    { const h = this.byId.get('hospital'); if (h && G.save && G.save.found && !G.save.found.hospital && Math.hypot(h.door.x - eye.x, h.door.z - eye.z) < 40) { G.save.found.hospital = true; G.emit('place:found', { id: 'hospital' }); } }
     // the panes of a chunk built after its place was loaded
     for (const s of this.list) if (s.live && s.live.panes && s.live.panes.length && !s.live.paneChunk) this.cutPanes(s);
     // where I am: inside which place, on which floor
@@ -573,6 +668,8 @@ export class Places {
         // (a street door has a closer: it swings shut behind me once I am clear)
         if (D.street && !D.shut && !D.moving && D.openT > 3.5 && Math.hypot(G.eye.x - D.centre.x, G.eye.z - D.centre.z) > 1.8) D.close(1.6);
       }
+      // [O5b] (its warm draw, once its programs are ready)
+      if (L.warm === 'draw') this.warmDraw(s);
       // drawn only when it can be seen: I am in it, a door of it is open, or it has windows
       const see = this.inside === s || L.K.doors.some((D) => D.street && !D.shut) || !!(L.K.windows && L.K.windows.length);
       if (L.K.group.visible !== see) L.K.group.visible = see;

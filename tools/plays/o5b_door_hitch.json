@@ -1,0 +1,156 @@
+{
+ "about": "[O5b] the first open of a big room's street door is one frame like the second (brief O5b \u00a74): the Docks bar, the market hall and the hotel, each walked to from 44 m down its pavement (the place loads on the way, its programs compiled and its buffers drawn under the walk), then E: the time from the key to the leaf's first move, and every frame's length for 0.7 s after it.",
+ "url": "/?mute=1&start=city",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o5b/hitch",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "eval": "(()=>{window.__c={gaps:[]};addEventListener('keydown',e=>{if(e.code==='KeyE'&&window.__c.door){__c.t0=performance.now();__c.a0=__c.door.angle;__c.t1=null;__c.gaps=[]}},true);let last=performance.now();const tick=()=>{const c=__c,n=performance.now();if(c.t0!=null&&n-c.t0<700)c.gaps.push(+(n-last).toFixed(1));last=n;if(c.door&&c.t0!=null&&c.t1==null&&Math.abs(c.door.angle-c.a0)>1e-4)c.t1=n;requestAnimationFrame(tick)};requestAnimationFrame(tick);window.__hitch={};return 1})()"
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar2'), d = s.door, tx = -d.nz * 1, tz = d.nx * 1; const x = d.x + d.nx * 2.6 + tx * 44, z = d.z + d.nz * 2.6 + tz * 44; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(tx, tz), 0); G.stage.part('bounds').navAround(x, z, 30); return [Math.round(x), Math.round(z), !!s.live]; })()",
+   "label": "bar2: 44 m down the pavement, the place not loaded"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(() => { const d = G.city.places.byId.get('bar2').door; return [[d.x + d.nx * 2.6, d.z + d.nz * 2.6]]; })()",
+   "timeout": 40000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('bar2'), d = s.door; const C = N.controller; C.yaw = Math.atan2(d.nx, d.nz); C.pitch = 0.12; __c.door = s.live && s.live.street[0]; return 'bar2 loaded ' + !!s.live + ' in ' + (s.live && s.live.ms.toFixed(1)) + ' ms, warm ' + (s.live && s.live.warm) + ' (draw ' + (s.live && s.live.warmMs ? s.live.warmMs.toFixed(1) : '-') + ' ms), programs ' + G.pipeline.renderer.info.programs.length; })()"
+  },
+  {
+   "until": "/go in/.test(G.hud.promptShown || '')",
+   "timeout": 3000,
+   "label": "the door's prompt (not a thing on the pavement)"
+  },
+  {
+   "eval": "(window.__p0 = G.pipeline.renderer.info.programs.length, 'prompt: ' + G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "(() => { const r = { lat: __c.t1 ? +(__c.t1 - __c.t0).toFixed(1) : null, max: Math.max(...__c.gaps), gaps: __c.gaps.slice(0, 12), programs: G.pipeline.renderer.info.programs.length - window.__p0 }; window.__hitch['bar2'] = r; return 'bar2 first open: ' + JSON.stringify(r); })()"
+  },
+  {
+   "expect": "window.__hitch['bar2'].lat != null && window.__hitch['bar2'].lat < 50 && window.__hitch['bar2'].max < 50",
+   "label": "bar2: the first open one frame (E to the leaf, every frame after it, under 50 ms)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hall'), d = s.door, tx = -d.nz * -1, tz = d.nx * -1; const x = d.x + d.nx * 2.6 + tx * 44, z = d.z + d.nz * 2.6 + tz * 44; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(tx, tz), 0); G.stage.part('bounds').navAround(x, z, 30); return [Math.round(x), Math.round(z), !!s.live]; })()",
+   "label": "hall: 44 m down the pavement, the place not loaded"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(() => { const d = G.city.places.byId.get('hall').door; return [[d.x + d.nx * 2.6, d.z + d.nz * 2.6]]; })()",
+   "timeout": 40000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hall'), d = s.door; const C = N.controller; C.yaw = Math.atan2(d.nx, d.nz); C.pitch = 0.12; __c.door = s.live && s.live.street[0]; return 'hall loaded ' + !!s.live + ' in ' + (s.live && s.live.ms.toFixed(1)) + ' ms, warm ' + (s.live && s.live.warm) + ' (draw ' + (s.live && s.live.warmMs ? s.live.warmMs.toFixed(1) : '-') + ' ms), programs ' + G.pipeline.renderer.info.programs.length; })()"
+  },
+  {
+   "until": "/go in/.test(G.hud.promptShown || '')",
+   "timeout": 3000,
+   "label": "the door's prompt (not a thing on the pavement)"
+  },
+  {
+   "eval": "(window.__p0 = G.pipeline.renderer.info.programs.length, 'prompt: ' + G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "(() => { const r = { lat: __c.t1 ? +(__c.t1 - __c.t0).toFixed(1) : null, max: Math.max(...__c.gaps), gaps: __c.gaps.slice(0, 12), programs: G.pipeline.renderer.info.programs.length - window.__p0 }; window.__hitch['hall'] = r; return 'hall first open: ' + JSON.stringify(r); })()"
+  },
+  {
+   "expect": "window.__hitch['hall'].lat != null && window.__hitch['hall'].lat < 50 && window.__hitch['hall'].max < 50",
+   "label": "hall: the first open one frame (E to the leaf, every frame after it, under 50 ms)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), d = s.door, tx = -d.nz * 1, tz = d.nx * 1; const x = d.x + d.nx * 2.6 + tx * 44, z = d.z + d.nz * 2.6 + tz * 44; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(tx, tz), 0); G.stage.part('bounds').navAround(x, z, 30); return [Math.round(x), Math.round(z), !!s.live]; })()",
+   "label": "hotel: 44 m down the pavement, the place not loaded"
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(() => { const d = G.city.places.byId.get('hotel').door; return [[d.x + d.nx * 2.6, d.z + d.nz * 2.6]]; })()",
+   "timeout": 40000
+  },
+  {
+   "eval": "(() => { const s = G.city.places.byId.get('hotel'), d = s.door; const C = N.controller; C.yaw = Math.atan2(d.nx, d.nz); C.pitch = 0.12; __c.door = s.live && s.live.street[0]; return 'hotel loaded ' + !!s.live + ' in ' + (s.live && s.live.ms.toFixed(1)) + ' ms, warm ' + (s.live && s.live.warm) + ' (draw ' + (s.live && s.live.warmMs ? s.live.warmMs.toFixed(1) : '-') + ' ms), programs ' + G.pipeline.renderer.info.programs.length; })()"
+  },
+  {
+   "until": "/go in/.test(G.hud.promptShown || '')",
+   "timeout": 3000,
+   "label": "the door's prompt (not a thing on the pavement)"
+  },
+  {
+   "eval": "(window.__p0 = G.pipeline.renderer.info.programs.length, 'prompt: ' + G.hud.promptShown)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "(() => { const r = { lat: __c.t1 ? +(__c.t1 - __c.t0).toFixed(1) : null, max: Math.max(...__c.gaps), gaps: __c.gaps.slice(0, 12), programs: G.pipeline.renderer.info.programs.length - window.__p0 }; window.__hitch['hotel'] = r; return 'hotel first open: ' + JSON.stringify(r); })()"
+  },
+  {
+   "expect": "window.__hitch['hotel'].lat != null && window.__hitch['hotel'].lat < 50 && window.__hitch['hotel'].max < 50",
+   "label": "hotel: the first open one frame (E to the leaf, every frame after it, under 50 ms)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  }
+ ]
+}

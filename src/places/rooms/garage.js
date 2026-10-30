@@ -69,14 +69,16 @@ export default {
   },
 };
 const myCar = (P, s) => { const c = P.game.city && P.game.city.car; return c && Math.hypot(c.pos.x - s.door.x, c.pos.z - s.door.z) < 30 ? c : null; };
+// [O2] a car of mine kept in the garage (wheels.garage): he brings it out when mine is not at the kerb
+const kept = (P) => { const W = P.game.wheels; return W && W.garage && W.garage.list.length ? W.garage : null; };
 function carOffer(s, P) {
   const car = myCar(P, s);
-  if (!car) return 'the mechanic';
+  if (!car) return kept(P) ? 'my car, kept' : 'the mechanic';
   return (car.damage || 0) > 0.2 ? `fix the car: $${REPAIR}` : `paint the car: $${REPAINT}`;
 }
 function carWork(K, s, P) {
   const G = P.game, car = myCar(P, s);
-  if (!car) { G.hud.message('Bring it round. He’ll look at it.', 1.8); return; }
+  if (!car) { const Gk = kept(P); if (Gk) { Gk.open(); return; } G.hud.message('Bring it round. He’ll look at it.', 1.8); return; }
   const fix = (car.damage || 0) > 0.2, cost = fix ? REPAIR : REPAINT;
   if (s.state.sore) { G.hud.message('Not to you. Not tonight.', 1.6); return; }
   if (!pay(G, cost, fix ? 'repairs' : 'paint')) { G.hud.message(`$${cost}. He waits.`, 1.6); return; }

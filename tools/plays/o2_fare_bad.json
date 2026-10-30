@@ -1,0 +1,35 @@
+{
+ "about": "[O2] The fares, bad hands (brief O2 \u00a74, \u00a75): a hail on my way, stopped by him, he gets in, the line says where, there by the roads, paid. node tools/play.mjs tools/plays/o2_fare_bad.json",
+ "url": "/?mute=1&start=city&ckind=taxi",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_fare_bad",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "drive": "tools/lib/o2_wheels.mjs",
+   "mode": "fare",
+   "hands": "bad",
+   "fares": 3,
+   "check": "D.stats.paid >= 1",
+   "label": "bad: knocked about now and then (Easy., He got out.), paid by the third"
+  }
+ ]
+}

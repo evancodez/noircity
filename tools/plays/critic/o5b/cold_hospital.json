@@ -1,0 +1,212 @@
+{
+ "about": "[O5b critic] cold: title, BEGIN, the first frame; then (a tool's move) down Mercer St 14 m from the hospital: does it read as a hospital; walk to its door, E (the first open, timed), the hall, the nurse (E, then a jab), the ward's swing doors, the ward, a bed (E), walk into the beds, out by the street door.",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/critic_o5b/hosp",
+ "steps": [
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "a_title"
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 30000
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "b_first"
+  },
+  {
+   "look": [
+    0,
+    0
+   ],
+   "steps": 1
+  },
+  {
+   "eval": "(N.controller.pitch=0,'pitch reset')"
+  },
+  {
+   "eval": "(window.__log=[],window.__lp={},setInterval(()=>{const t=(performance.now()/1000).toFixed(1);const p=G.hud.promptShown,m=document.querySelector('#hud .msg').textContent,o=G.hud.objectiveText;if(p!==__lp.p)__log.push(t+' P['+p+']');if(m!==__lp.m&&m)__log.push(t+' M['+m+']');if(o!==__lp.o)__log.push(t+' O['+o+']');__lp={p,m,o}},50),window.__E=[],addEventListener('keydown',e=>{if(e.code==='KeyE'){const d=G.city.places.byId.get('hospital');const L=d&&d.live;const doors=L?[...(L.street||[]),...(L.doors||[])]:[];const a0=doors.map(x=>x&&x.angle);const t0=performance.now();let n=0;const f=()=>{n++;const k=doors.findIndex((x,i)=>x&&Math.abs(x.angle-a0[i])>1e-4);if(k>=0){__E.push('E->door '+k+' '+(performance.now()-t0).toFixed(0)+'ms');return}if(n<60)requestAnimationFrame(f);else __E.push('E: no door moved in 60 frames')};requestAnimationFrame(f)}},true),document.getElementById('hud').innerText.replace(/\\s+/g,' ').slice(0,300))"
+  },
+  {
+   "eval": "(()=>{const s=G.city.places.byId.get('hospital'),d=s.door,tx=-d.nz,tz=d.nx;const x=d.x+d.nx*5+tx*13,z=d.z+d.nz*5+tz*13;G.stage.part('stream').warmAround(x,z);N.controller.setPose(x,z,Math.atan2(x-d.x,z-d.z),0.02);G.stage.part('bounds').navAround(x,z,30);return [Math.round(x),Math.round(z),!!s.live]})()"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "shot": "c_front"
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('hospital').door;return [[d.x+d.nx*1.5,d.z+d.nz*1.5]]})()",
+   "timeout": 30000
+  },
+  {
+   "eval": "'pitch '+N.controller.pitch.toFixed(2)+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "look": "(()=>{const d=G.city.places.byId.get('hospital').door;const C=N.controller;let dy=Math.atan2(d.nx,d.nz)-C.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));return [-dy/N.controller.sensitivity, 0]})()",
+   "steps": 8
+  },
+  {
+   "wait": 400
+  },
+  {
+   "eval": "'prompt at door: '+G.hud.promptShown+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 900
+  },
+  {
+   "eval": "JSON.stringify(__E)"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hospital').frame;const p=F.w(0,-2.2);return [[p.x,p.z]]})()",
+   "timeout": 15000
+  },
+  {
+   "eval": "'pitch '+N.controller.pitch.toFixed(2)+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "d_hall"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hospital').frame;const p=F.w(3.4,-3.0);return [[p.x,p.z]]})()",
+   "timeout": 15000
+  },
+  {
+   "eval": "'pitch '+N.controller.pitch.toFixed(2)+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "eval": "'at desk prompt: '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 1500
+  },
+  {
+   "shot": "e_nurse"
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 300
+  },
+  {
+   "mouse": "click",
+   "button": "left"
+  },
+  {
+   "wait": 2500
+  },
+  {
+   "shot": "f_nurse_jab"
+  },
+  {
+   "eval": "'heat '+(G.police&&G.police.heat)+' fight '+!!(G.brawl&&G.brawl.active)"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hospital').frame;const a=F.w(0,-6.4),b=F.w(0,-9),c=F.w(0,-13);return [[a.x,a.z],[b.x,b.z],[c.x,c.z]]})()",
+   "timeout": 30000
+  },
+  {
+   "eval": "'pitch '+N.controller.pitch.toFixed(2)+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "wait": 500
+  },
+  {
+   "shot": "g_ward"
+  },
+  {
+   "eval": "'ward prompt: '+G.hud.promptShown+' pos '+JSON.stringify(G.city.places.byId.get('hospital').frame.l(N.controller.pos.x,N.controller.pos.z))"
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hospital').frame;const a=F.w(-4,-13);return [[a.x,a.z]]})()",
+   "timeout": 8000,
+   "into": true
+  },
+  {
+   "eval": "'pitch '+N.controller.pitch.toFixed(2)+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "eval": "'into bed: pos '+JSON.stringify(G.city.places.byId.get('hospital').frame.l(N.controller.pos.x,N.controller.pos.z))+' prompt '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "shot": "h_bed"
+  },
+  {
+   "key": "KeyS",
+   "hold": 80
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "walk": "(()=>{const F=G.city.places.byId.get('hospital').frame;const a=F.w(0,-13),b=F.w(0,-8),c=F.w(0,-3),d=F.w(0,-0.6);return [[a.x,a.z],[b.x,b.z],[c.x,c.z],[d.x,d.z]]})()",
+   "timeout": 40000
+  },
+  {
+   "eval": "'pitch '+N.controller.pitch.toFixed(2)+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "eval": "'exit prompt: '+G.hud.promptShown"
+  },
+  {
+   "key": "KeyE",
+   "hold": 70
+  },
+  {
+   "wait": 800
+  },
+  {
+   "walk": "(()=>{const d=G.city.places.byId.get('hospital').door;return [[d.x+d.nx*4,d.z+d.nz*4]]})()",
+   "timeout": 15000
+  },
+  {
+   "eval": "'pitch '+N.controller.pitch.toFixed(2)+' yaw '+N.controller.yaw.toFixed(2)"
+  },
+  {
+   "eval": "'out: '+JSON.stringify(G.city.places.byId.get('hospital').frame.l(N.controller.pos.x,N.controller.pos.z))+' in '+(G.city.places.inside&&G.city.places.inside.id)"
+  },
+  {
+   "eval": "__log.join('\\n')"
+  },
+  {
+   "eval": "JSON.stringify(__E)"
+  }
+ ]
+}

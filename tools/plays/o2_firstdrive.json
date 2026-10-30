@@ -1,0 +1,70 @@
+{
+ "about": "[O2] after the critic (M3): the first W of the game - BEGIN, E into the coupe at the Grand Ave kerb, W held: the kerb ahead is clear (no car parked in its line for 48 m), so a first-timer's first seconds of driving are a drive, not a crash. node tools/play.mjs tools/plays/o2_firstdrive.json",
+ "url": "/?mute=1",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_firstdrive",
+ "steps": [
+  {
+   "until": "G.state === 'title'",
+   "timeout": 30000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 25000
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "until": "G.city.inCar",
+   "timeout": 4000
+  },
+  {
+   "wait": 1200
+  },
+  {
+   "eval": "(window.__fd0 = { x: G.city.car.pos.x, z: G.city.car.pos.z, c: G.city.car.stats.crashes }, window.__fd0)"
+  },
+  {
+   "down": "KeyW"
+  },
+  {
+   "wait": 3500
+  },
+  {
+   "eval": "({ moved: +Math.hypot(G.city.car.pos.x - __fd0.x, G.city.car.pos.z - __fd0.z).toFixed(1), crashes: G.city.car.stats.crashes - __fd0.c, v: +G.city.car.speed.toFixed(1), dmg: +G.city.car.damage.toFixed(2) })"
+  },
+  {
+   "expect": "G.city.car.stats.crashes === __fd0.c && Math.hypot(G.city.car.pos.x - __fd0.x, G.city.car.pos.z - __fd0.z) > 20 && G.city.car.damage < 0.2",
+   "label": "the first 3.5 s of W: away up the avenue, nothing hit"
+  },
+  {
+   "up": "KeyW"
+  },
+  {
+   "down": "KeyS"
+  },
+  {
+   "wait": 2000
+  },
+  {
+   "up": "KeyS"
+  }
+ ]
+}

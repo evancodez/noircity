@@ -1,0 +1,24 @@
+{
+ "about": "[O5b] the pier office's store (brief O5b §4, O5's Left 2): its three men start among the crates at the back of the store; I walk in at the street door and stand in the front office; they come for me through the wide opening under the stairs' landing (the men's grid used to stop at the landing's rails). A nav proof, not the contest: my health is held full by the tool so the fight runs long enough to see each man come through (the contest is o5_hide_*_pieroffice).",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/o5b/pierstore",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 30000 },
+  { "eval": "(() => { const s = G.city.places.byId.get('pieroffice'), d = s.door; const x = d.x + d.nx * 3.0, z = d.z + d.nz * 3.0; G.stage.part('stream').warmAround(x, z); N.controller.setPose(x, z, Math.atan2(d.nx, d.nz), 0.1); G.stage.part('bounds').navAround(x, z, 30); setInterval(() => { if (G.health && !G.failing) G.health.hp = 100; }, 60); return [Math.round(x), Math.round(z)]; })()" },
+  { "until": "(() => { const s = G.city.places.byId.get('pieroffice'); return !!s.live && G.stage.hoods.list.filter((h) => h.alive).length >= 3; })()", "timeout": 10000, "label": "the place loaded, its men in it" },
+  { "eval": "(() => { const s = G.city.places.byId.get('pieroffice'), F = s.frame; window.__men = G.stage.hoods.list.filter((h) => h.alive && (() => { const p = F.l(h.pos.x, h.pos.z); return p.z < -6 && p.z > -20 && Math.abs(p.x) < 15; })()); window.__through = window.__men.map(() => false); setInterval(() => { window.__men.forEach((h, i) => { const p = F.l(h.pos.x, h.pos.z); if (p.z > -5.4 || (p.z > -6.6 && p.x > 2.2 && p.x < 4.8)) window.__through[i] = true; }); }, 50); return window.__men.map((h) => { const p = F.l(h.pos.x, h.pos.z); return [+p.x.toFixed(1), +p.z.toFixed(1)]; }); })()" },
+  { "name": "three men in the store", "expect": "window.__men.length === 3" },
+  { "until": "/go in/.test(G.hud.promptShown || '')", "timeout": 3000 },
+  { "key": "KeyE", "hold": 70 },
+  { "wait": 500 },
+  { "walk": "(() => { const s = G.city.places.byId.get('pieroffice'), F = s.frame; return [[0, -0.6], [-1.6, -1.4]].map(([x, z]) => { const p = F.w(x, z); return [p.x, p.z]; }); })()", "timeout": 15000 },
+  { "eval": "(() => { const s = G.city.places.byId.get('pieroffice'), F = s.frame, p = F.w(3.5, -5.5), C = N.controller; C.yaw = Math.atan2(-(p.x - C.pos.x), -(p.z - C.pos.z)); C.pitch = 0; return 'inside ' + (G.city.places.inside && G.city.places.inside.id); })()" },
+  { "until": "window.__through.every((t, i) => t || !window.__men[i].alive)", "timeout": 40000, "label": "each of the three came out of the store into the opening under the landing (or through it)" },
+  { "shot": "01_through" },
+  { "eval": "(() => { const s = G.city.places.byId.get('pieroffice'), F = s.frame; return 'through ' + JSON.stringify(window.__through) + ' at ' + JSON.stringify(window.__men.map((h) => { const p = F.l(h.pos.x, h.pos.z); return [+p.x.toFixed(1), +p.z.toFixed(1), h.alive]; })); })()" },
+  { "name": "all three came through alive", "expect": "window.__through.every(Boolean)" }
+ ]
+}

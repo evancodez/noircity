@@ -91,7 +91,18 @@ export default {
       K.box('wood', px - 0.35, px + 0.35, FLOOR, FLOOR + 1.3, pz - 0.75, pz + 0.75, 1);
       K.box('linen', px + 0.3, px + 0.42, FLOOR + 0.72, FLOOR + 0.76, pz - 0.65, pz + 0.65, 1);
       K.solid(px - 0.35, px + 0.42, pz - 0.75, pz + 0.75);
-      K.use({ at: [px + 0.36, FLOOR + 0.8, pz], prompt: 'the piano', onUse: () => { P.game.sfx.play('ring', K.F.v(px, FLOOR + 0.9, pz), { k: 0.4 }, { ref: 2 }); P.game.hud.message('Out of tune. Somebody laughs.', 1.8); } });
+      // [O5b] (brief O5b §3: the bar's second stroke) a man at the piano: from eleven he plays his set (an
+      // hour on, an hour off: the night begins at eleven), between sets he smokes on his stool
+      stool(K, px + 0.95, pz, { h: 0.5 });
+      K.fig('oldman', px + 0.95, pz, -Math.PI / 2, { name: 'pianist', state: 'sitTalk', seat: { y: FLOOR + 0.52, name: 'stool' } });
+      K.piano = { x: px + 0.36, y: FLOOR + 0.9, z: pz };
+      K.use({ at: [px + 0.36, FLOOR + 0.8, pz], prompt: 'the piano', onUse: () => {
+        const G = P.game, pl = s.live && s.live.run && s.live.run.playing;
+        if (pl) { G.hud.message('He nods. He does not stop.', 1.8); return; }
+        G.sfx.play('o5b_piano', K.F.v(px, FLOOR + 0.9, pz), { f: 196, k: 0.8, out: 1 }, { ref: 2 });
+        G.sfx.play('o5b_piano', K.F.v(px, FLOOR + 0.9, pz), { f: 233, k: 0.6, out: 1 }, { ref: 2 });
+        G.hud.message('Out of tune. Somebody laughs.', 1.8);
+      } });
       for (let i = 0; i < 3; i++) sheet(K, -4.0 - i * 0.7 + (x0 < -4 ? 0 : 0), FLOOR + 1.9, x0, { w: 0.4, h: 0.5, dir: 'e' });
       litWindow(K, (x0 + x1) / 2, FLOOR + 2.1, z0, { w: 1.6, h: 0.5, dir: 's', key: 'litDim' });
       label(K, 'NO TAB', x1 - 0.02, FLOOR + 2.2, -3.0, { w: 0.9, h: 0.36, dir: 'w', lit: true });
@@ -115,7 +126,8 @@ export default {
     }
     // a drink at the bar: sit on a stool, E
     for (const [sx, sz] of bar.stools.slice(1, -1)) {
-      const S = K.seat({ name: `stool${Math.round(sx * 10)}_${Math.round(sz * 10)}`, x: sx, z: sz, yaw: big ? -Math.PI / 2 : 0, eyeY: FLOOR + 1.62, at: [sx, FLOOR + 0.8, sz], prompt: 'sit at the bar', standAt: big ? { x: sx - 0.7, z: sz, yaw: -Math.PI / 2 } : { x: sx, z: sz + 0.7, yaw: 0 } });
+      const S = K.seat({ name: `stool${Math.round(sx * 10)}_${Math.round(sz * 10)}`, x: sx, z: sz, yaw: big ? -Math.PI / 2 : 0, eyeY: FLOOR + 1.62, at: [sx, FLOOR + 0.8, sz], range: 1.7, cone: 0.38, prompt: 'sit at the bar',   // [O5b] (the critic's minor 10: a stool takes E only looked at, close - never past the barman)
+      standAt: big ? { x: sx - 0.7, z: sz, yaw: -Math.PI / 2 } : { x: sx, z: sz + 0.7, yaw: 0 } });
       const top = bar.top(big ? sz : sx);
       K.use({ seated: S, at: top, range: 1.7, cone: 0.7, prompt: () => (s.state.glass ? 'drink' : s.state.sore ? 'the barman' : `a whiskey: $${DRINK}`), onUse: () => drink(K, s, P, top) });
     }
@@ -147,13 +159,51 @@ function drink(K, s, P, top) {
 
 // the two men at the bar's end: now and then they fall to fighting (a shove,
 // blows traded, one goes down and gets up a while later); E at one steps in
+// [O5b] the pianist's set: a slow blues, the left hand walking, the right hand's chords on two and
+// four and a lick now and then; each note the procedural piano's (o5b_piano), a little out of tune
+const BLUES = [0, 0, 5, 0, 7, 5, 0, 7];   // (the bars' roots, semitones over G)
+const WALK = [0, 4, 7, 9, 10, 9, 7, 4];
+function pianoSet(K, s, P) {
+  const G = P.game;
+  const hz = (semi) => 98 * Math.pow(2, semi / 12);
+  const st = { t: 0, beat: 0, on: false };
+  const at = () => K.F.v(K.piano.x, K.piano.y, K.piano.z);
+  const note = (semi, k, oct = 1) => { try { G.sfx.play('o5b_piano', at(), { f: hz(semi) * oct, k, out: (Math.random() - 0.5) * 0.03 }, { ref: 3 }); } catch (e) { /* */ } };
+  return {
+    get on() { return st.on; },
+    step(dt, playing) {
+      st.on = playing;
+      if (!playing) { st.t = 0; return; }
+      st.t -= dt;
+      if (st.t > 0) return;
+      // a swung beat: long, short
+      const b = st.beat++, bar = Math.floor(b / 4) % BLUES.length, r = BLUES[bar], k = b % 4;
+      st.t = (b % 2 ? 0.27 : 0.43);
+      note(r + WALK[(b * 2) % WALK.length] - 12, 0.55);
+      if (k === 1 || k === 3) for (const c of [4, 10, 15]) note(r + c, 0.3);
+      if (k === 2 && Math.random() < 0.35) { const lick = [15, 17, 18, 19, 22][Math.floor(Math.random() * 5)]; note(r + lick, 0.35); }
+    },
+  };
+}
+
 function barLife(K, s, P) {
   const G = P.game, Cr = crowdOf(G);
+  const piano = K.piano ? pianoSet(K, s, P) : null;
+  let playing = null;
   const st = { t: 0, next: 25 + Math.random() * 20, fight: null, mine: false, pend: [] };
   const man = (n) => s.live.cast.find((c) => c.name === `${s.id}_${n}`);
   const later = (secs, fn) => st.pend.push({ t: secs, fn });
   const run = {
+    get playing() { return !!(piano && piano.on); },
     step(dt) {
+      // [O5b] the pianist: his set by the night's hour (eleven, one, three), his hands' state; a fist,
+      // a shot, a brawl in the room stops him
+      if (piano) {
+        const c = man('pianist'), hr = G.night && G.night.clock ? G.night.clock.hour : 23;
+        const set = (hr === 23 || hr === 1 || hr === 3) && c && c.alive && !c.down && !s.state.sore && !Cr.active;
+        if (c && set !== playing) { playing = set; try { c.setState(set ? 'sitTalk' : 'sitSmoke', 0.5); } catch (e) { /* */ } }
+        piano.step(dt, !!set && P.inside === s);
+      }
       for (const p of [...st.pend]) { p.t -= dt; if (p.t <= 0) { st.pend.splice(st.pend.indexOf(p), 1); try { p.fn(); } catch (e) { /* a man gone */ } } }
       const A = man('drunkA'), B = man('drunkB');
       // (my fight with them is O4's crowd's: when it is over they are where it left them)

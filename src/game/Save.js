@@ -65,7 +65,7 @@ export class Save {
     const city = opts.city || (G.night && G.night.snapshot ? G.night.snapshot() : null);
     if (!city) return null;
     const data = {
-      v: SAVE_VERSION, scene, beat: S && S.beat === 'hotel' ? 'hotel' : 'roam',   // [O7] (O5's bed: CONTINUE wakes in the room)
+      v: SAVE_VERSION, scene, beat: S && (S.beat === 'hotel' || S.beat === 'ward') ? S.beat : 'roam',   // [O7] (O5's bed: CONTINUE wakes in the room) [O5b] (a ward's bed: in the ward)
       at: Date.now(), flags: plain(this.flags), inventory: [...this.inventory],
       money: this.money, ammo: { ...(this.ammo || {}) }, heat: this.heat | 0, matchbooks: [...this.matchbooks], garage: this.garage.map((c) => ({ ...c })),
       found: { ...this.found }, bounty: this.bounty ? JSON.parse(JSON.stringify(this.bounty)) : null, city,

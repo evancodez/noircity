@@ -1,0 +1,14 @@
+{
+ "about": "[manager, AD-hotfix] the view from every car kind's seat: a coupe whole and after O6b's damage, then O2's fleet (saloon, taxi, police, hearse, van, lorry; the base's sedan, truck and patrol car where there is no fleet); a frame from each (shots/mgr/seats), then tools/colour.py --blocked on the frames. NOIR_PORT=5370 node tools/play.mjs tools/plays/mgr/seats.json",
+ "url": "/?mute=1&start=city",
+ "size": [1280, 800],
+ "out": "shots/mgr/seats",
+ "steps": [
+  { "wait": 1500 },
+  { "clickOn": "#title .opt[data-k=begin]", "taken": "G.state !== 'title'", "retries": 5, "every": 4000 },
+  { "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05", "timeout": 25000 },
+  { "wait": 1000 },
+  { "eval": "(G.save.flags.taught = { city_in: true, city_drive: true, city_map: true, city_gun: true, o3_punch: true }, 1)" },
+  { "drive": "tools/lib/mgr_seats.mjs", "check": "D.frames.length >= 5 && Object.values(D.in).every((x) => x && x.inCar && x.same && x.seated)", "label": "a frame from every seat: the coupe, the damaged coupe, the sedan, the truck, the police car" }
+ ]
+}

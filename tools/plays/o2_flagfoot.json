@@ -1,0 +1,77 @@
+{
+ "about": "[O2] after the critic (m1): on foot at the Yards' corner, the man with the flag answers E - 'Bring a car. Ten to race.' node tools/play.mjs tools/plays/o2_flagfoot.json",
+ "url": "/?mute=1&start=city&car=-452,196,1.5708",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2/o2_flagfoot",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 1000
+  },
+  {
+   "until": "G.wheels.race.cars.length === 3 && !!G.wheels.race.flag",
+   "timeout": 15000
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "until": "!G.city.inCar",
+   "timeout": 5000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "walk": [
+    [
+     -446,
+     200
+    ],
+    [
+     -443.8,
+     204.6
+    ]
+   ],
+   "timeout": 25000
+  },
+  {
+   "look": "(() => { const C = N.controller, f = G.wheels.race.flag.fig.pos; const want = Math.atan2(-(f.x - C.pos.x), -(f.z - C.pos.z)); const err = Math.atan2(Math.sin(want - C.yaw), Math.cos(want - C.yaw)); return [Math.round(-err / C.sensitivity), 0]; })()",
+   "steps": 8
+  },
+  {
+   "wait": 500
+  },
+  {
+   "expect": "G.hud.promptShown === 'E  the race'",
+   "label": "on foot at the man with the flag: E  the race"
+  },
+  {
+   "key": "KeyE",
+   "hold": 80
+  },
+  {
+   "wait": 600
+  },
+  {
+   "expect": "G.wheels.race.stats.asked === 1 && G.wheels.race.state === 'idle'",
+   "label": "E: he says what it takes (Bring a car. Ten to race.), no race on foot"
+  }
+ ]
+}

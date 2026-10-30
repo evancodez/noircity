@@ -1,44 +1,45 @@
 #!/usr/bin/env python3
-"""[O1b] The colour measure (docs/briefs/O1B_STREETS.md §4: colour under 2 % of
-any frame's pixels, never a wash) and the tone figures the look lanes use
-(paper white = luma >= 230, ink = luma < 40, mid = 64..191, in % of the frame).
-
-  python3 tools/colour.py shots/o1b/blind/*.png
-
-A pixel is colour when its HSV saturation is over 0.25 and its value over 0.1
-(the ink keeps a scene colour whose saturation is over ~0.25: what it kept
-prints saturated; a grey's sRGB rounding never reaches 0.25). Prints, per
-frame: colour %, the hues it is (red, amber, blue, other), paper white, ink, mid.
+"""The colour share of a frame (DESIGN.md's rule: the city is ink; red under 2 % of a
+frame, for the police lamp, fire and the odd sign; the odd blue of a neon). A merge
+check runs it on five frames and routes an excess to the look lane.
+  python3 tools/colour.py --blocked shots/mgr/seats/*.png  each frame: the share of near-black in the
+      windscreen band (rows 28-62 %, cols 18-82 %): what the seat's view is blocked by (a pillar,
+      the dash, a bonnet up) as flat black; the accepted coupe frame reads 11 %: under 20 % the road is read, over 40 % nothing is
+  python3 tools/colour.py shots/golden/city/*.png        each frame: red % (strong), red-tinted % (a cast in the wet counts), blue %, verdict (the tinted share against the limit)
+A pixel is red when r > 90 and r > 1.7 * max(g, b); blue when b > 90 and b > 1.7 * max(r, g).
 """
 import sys
 import numpy as np
 from PIL import Image
-
-
-def measure(path):
-    a = np.asarray(Image.open(path).convert('RGB')).astype(np.float32) / 255.0
-    mx, mn = a.max(axis=2), a.min(axis=2)
-    sat = np.where(mx > 1e-6, (mx - mn) / np.maximum(mx, 1e-6), 0)
-    col = (sat > 0.25) & (mx > 0.1)
+LIMIT = 2.0
+def share(path):
+    a = np.asarray(Image.open(path).convert('RGB')).astype(np.int32)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    # hue bands of the registry's accents
-    red = col & (r >= g) & (r >= b) & (g < r * 0.45)
-    amber = col & (r >= b) & (g >= r * 0.45) & (b < g * 0.7)
-    blue = col & (b >= r) & (b >= g * 0.85)
-    other = col & ~(red | amber | blue)
-    luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) * 255
-    n = a.shape[0] * a.shape[1]
-    pc = lambda m: 100.0 * m.sum() / n
-    return {'colour': pc(col), 'red': pc(red), 'amber': pc(amber), 'blue': pc(blue), 'other': pc(other),
-            'white': pc(luma >= 230), 'ink': pc(luma < 40), 'mid': pc((luma >= 64) & (luma < 192))}
-
-
+    red = (r > 90) & (r > 1.7 * np.maximum(g, b))
+    tint = (r > 40) & (r > 1.5 * np.maximum(g, b))      # (a red cast in a reflection counts too)
+    blue = (b > 90) & (b > 1.7 * np.maximum(r, g))
+    n = r.size
+    return 100.0 * red.sum() / n, 100.0 * tint.sum() / n, 100.0 * blue.sum() / n
+def blocked(path):
+    a = np.asarray(Image.open(path).convert('RGB')).astype(np.int32)
+    h, w = a.shape[:2]
+    band = a[int(h * 0.28):int(h * 0.62), int(w * 0.18):int(w * 0.82)]
+    # flat black: a 7x7 window all under 6 - the cabin's unlit frame, a pillar, a bonnet up; the night's
+    # dark has texture (rain, strokes) and is not counted. The accepted coupe seat frame reads 11 %.
+    from numpy.lib.stride_tricks import sliding_window_view
+    d = (band.max(axis=2) < 6).astype(np.uint8)
+    flat = sliding_window_view(d, (7, 7)).min(axis=(2, 3))
+    cols = flat.mean(axis=0)   # per column: the share of the band's height that is flat black
+    return 100.0 * flat.mean(), 100.0 * (cols > 0.9).mean()
 if __name__ == '__main__':
-    rows = []
+    if sys.argv[1:2] == ['--blocked']:
+        for p in sys.argv[2:]:
+            d, c = blocked(p)
+            print(f"{p.split('/')[-1]:28s} flat black {d:5.1f} % of the windscreen band, {c:5.1f} % of its columns top to bottom  {'NOTHING SEEN' if d > 40 else 'blocked' if d > 20 else 'ok'}")
+        sys.exit(0)
+    worst = 0
     for p in sys.argv[1:]:
-        m = measure(p)
-        rows.append(m)
-        print('%-40s colour %5.2f %%  (red %4.2f amber %4.2f blue %4.2f other %4.2f)  white %4.1f  ink %4.1f  mid %4.1f' % (
-            p.split('/')[-1], m['colour'], m['red'], m['amber'], m['blue'], m['other'], m['white'], m['ink'], m['mid']))
-    if rows:
-        print('max colour %.2f %%, mean %.2f %%; over 2 %%: %d of %d' % (max(r['colour'] for r in rows), sum(r['colour'] for r in rows) / len(rows), sum(1 for r in rows if r['colour'] > 2), len(rows)))
+        rd, tn, bl = share(p)
+        worst = max(worst, tn)
+        print(f"{p.split('/')[-1]:28s} red {rd:5.2f} %  red-tinted {tn:5.2f} %  blue {bl:5.2f} %  {'OVER' if tn > LIMIT else 'ok'}")
+    print(f"limit {LIMIT} %: {'OVER' if worst > LIMIT else 'all under'}")

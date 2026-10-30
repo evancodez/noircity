@@ -32,12 +32,17 @@ import { input } from '../input/Pad.js';
 //   I win        down with my fists: E 'take him in' - 'Come on.', he walks off
 //                to the station: the full reward; dead (a round): half; got
 //                away ('He got away.'): back on his corner when I come again
+// [O5b] (brief O5b §2) one board: the posters hang on the sheets of the headquarters' hall (src/places/rooms/
+// police.js draws them from poster() below; the board outside the door is gone); a man taken in follows me
+// ('Come on.': on foot at my heels, in the back of my car) to the sergeant's desk, where E books him ('Book
+// him.': the reward through game.money, game.things.end, the poster PAID, the man walked to a cell); lost on
+// the way (left 70 m behind, or a fall) he is back on his corner. A dead man's half is paid at the desk.
 export const BOUNTY = { reach: 2.2, near: 110, far: 220, rewards: [150, 250, 400], notice: 8, watch: 16, watchT: 3, gun: 25, heard: 40, half: 0.5, take: 2.2, runHp: 0.45, away: 60, runSp: 3.3, lost: 32, runT: 15 };
 const FIRST = ['Sal', 'Vito', 'Eddie', 'Lou', 'Frankie', 'Mickey', 'Nate', 'Joey', 'Carmine', 'Duke', 'Rocco', 'Benny'];
 const LAST = ['Moretti', 'Kane', 'Doyle', 'Russo', 'Malloy', 'Brandt', 'Costa', 'Quinn', 'Falco', 'Ricci', 'Shea', 'Varga'];
 const NICK = ['the Knife', 'Two-Bits', 'the Ox', 'Lucky', 'the Priest', 'Spats', 'the Weasel', 'Blue'];
 const TURF = ['docks', 'tenements'];
-const _v = new THREE.Vector3(), _dir = new THREE.Vector3(), _ray = new THREE.Vector3();
+const _v = new THREE.Vector3(), _dir = new THREE.Vector3(), _ray = new THREE.Vector3(), _door = new THREE.Vector3();
 
 export class Bounty {
   constructor(night) {
@@ -56,7 +61,8 @@ export class Bounty {
     G.on('crowd:shot', (e) => { const F = crowdOf(G), m = F.men && F.men[e.man]; for (const M of this.men.values()) if (m && m.c === M.c) this.dead(M); });
     G.on('crowd:up', (e) => { const F = crowdOf(G), m = F.men && F.men[e.man]; for (const M of this.men.values()) if (m && m.c === M.c && M.mode === 'fight') this.flee(M, m); });
   }
-  dropAll() { for (const M of this.men.values()) this.drop(M); this.men.clear(); kitFree(this.night, 'bounty'); }
+  // ([O5b] a man I was leading is lost with the scene - a fall, a beat: back on his corner)
+  dropAll() { for (const M of this.men.values()) { if (M.mode === 'led') this.lose(M, true); this.drop(M); } this.men.clear(); kitFree(this.night, 'bounty'); }
   get G() { return this.night.game; }
 
   // three names for this night (seeded by the night: the same three until
@@ -85,31 +91,11 @@ export class Bounty {
     return out;
   }
 
-  // the board by the headquarters' door (built once the city is entered)
-  board() {
-    if (this.place) return this.place;
-    const G = this.G, P = G.stage.part && G.stage.part('places');
-    const door = P && P.doors && P.doors.find((d) => d.place === 'police');
-    if (!door) return null;
-    const tx = -door.nz, tz = door.nx;
-    const x = door.x + tx * 3.2 + door.nx * 0.35, z = door.z + tz * 3.2 + door.nz * 0.35;
-    this.place = { x, z, nx: door.nx, nz: door.nz, standX: x + door.nx * 1.3, standZ: z + door.nz * 1.3 };
-    // a board on two posts, three notices pinned to it
-    const M = G.stage.M;
-    const grp = new THREE.Group();
-    const wood = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.05, 0.08), M.wood || M.iron);
-    wood.position.set(0, 1.55, 0);
-    grp.add(wood);
-    for (const sx of [-0.62, 0.62]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.1, 0.08), M.iron); post.position.set(sx, 1.05, -0.02); grp.add(post); }
-    const paper = new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(0.42) });
-    for (let i = 0; i < 3; i++) { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.5), paper); p.position.set(-0.45 + i * 0.45, 1.55 + (i === 1 ? 0.04 : -0.02), 0.045); p.rotation.z = (i - 1) * 0.04; grp.add(p); }
-    grp.position.set(x, 0, z);
-    grp.rotation.y = Math.atan2(door.nx, door.nz);
-    tagInk(grp, allocInkId(1));
-    G.stage.scene.add(grp);
-    this.boardMesh = grp;
-    return this.place;
-  }
+  // [O5b] the board outside the headquarters' door is gone: the posters are on the hall's sheets
+  // (src/places/rooms/police.js), the desk inside pays
+  board() { return null; }
+  // the station's site (O5's police headquarters)
+  hq() { const P = this.G.city && this.G.city.places; return P ? P.byId.get('police') : null; }
 
   step(dt) {
     const N = this.night, G = this.G;
@@ -122,7 +108,9 @@ export class Bounty {
       const d = Math.hypot(e.x - b.x, e.z - b.z);
       let M = this.men.get(b.id);
       if (b.state === 'out' && !M && d < BOUNTY.near && !(b.awayT && G.time - b.awayT < 90 && d > BOUNTY.near * 0.5)) M = this.spawn(b);
-      if (M && (d > BOUNTY.far || M.mode === 'gone')) { this.drop(M); this.men.delete(b.id); continue; }
+      // ([O5b] a man I lead is mine, however far from his corner; one in a cell goes when I am well away)
+      const held = M && (M.mode === 'led' || M.mode === 'booked' || M.mode === 'jailed');
+      if (M && ((d > BOUNTY.far && !held) || M.mode === 'gone' || (M.mode === 'jailed' && Math.hypot(e.x - M.pos.x, e.z - M.pos.z) > 70))) { this.drop(M); this.men.delete(b.id); continue; }
       if (M) { this.stepMan(M, dt); if (M.mode === 'beaten' && Math.hypot(M.pos.x - e.x, M.pos.z - e.z) < BOUNTY.take) take = M; }
     }
     const R = G.city;
@@ -133,16 +121,11 @@ export class Bounty {
       if (G.keysDown.has('KeyE')) { G.keysDown.delete('KeyE'); this.takeIn(take); }
       return;
     }
-    const B = this.board();
-    if (!B) { if (this.prompted) this.prompt(false); return; }
-    const p = G.controller.pos;
-    const near = Math.hypot(p.x - B.standX, p.z - B.standZ) < BOUNTY.reach;
-    const owed = this.owed(L);
-    this.prompt(near, owed ? `E  collect  $${owed}` : 'E  the wanted board');
-    if (near && G.keysDown.has('KeyE')) { G.keysDown.delete('KeyE'); this.use(); }
+    if (this.prompted) this.prompt(false);
   }
   // what the board owes: a man taken in his reward, a dead one half of it (THINGS_TO_DO §5)
-  owed(L = this.names()) { return L.reduce((a, b) => a + (b.state === 'taken' ? b.reward : b.state === 'dead' || b.state === 'down' ? Math.round(b.reward * BOUNTY.half) : 0), 0); }
+  // [O5b] (a man taken in is paid when he is booked at the desk: owed is the dead men's halves)
+  owed(L = this.names()) { return L.reduce((a, b) => a + (b.state === 'dead' || b.state === 'down' ? Math.round(b.reward * BOUNTY.half) : 0), 0); }
 
   // ---- the man ------------------------------------------------------------------------
   stepMan(M, dt) {
@@ -166,6 +149,7 @@ export class Bounty {
       return;
     }
     if (M.mode === 'run') { this.stepRun(M, dt); return; }
+    if (M.mode === 'booked' || M.mode === 'jailed') { if (M.mode === 'booked') this.stepBooked(M, dt); return; }
     if (M.mode === 'fight' || M.mode === 'beaten' || M.mode === 'led') { if (M.mode === 'led') this.stepLed(M, dt); if (M.mode === 'fight' && M.c && !M.c.alive && !F.active) M.mode = 'beaten'; return; }
     if (!M.c || !M.c.alive) return;
     // a gun of mine out near him: he draws too
@@ -267,23 +251,168 @@ export class Bounty {
     const G = this.G, b = M.b;
     this.prompt(false);
     b.state = 'taken';
-    M.mode = 'led'; M.t = 0;
+    M.mode = 'led'; M.t = 0; M.far = 0; M.walk = null;
     if (G.hud.say) G.hud.say('Come on.', 1.8, { always: true });
     try { M.c.down = false; M.c.play('o4_getUp', { fade: 0.2, hold: true }); } catch (err) { /* */ }
+    // [O5b] the thing taken up: the line, the mark on the headquarters' door (game.things)
+    const S = this.hq();
+    if (G.things) G.things.start('bounty_' + b.id, { line: 'Take him to headquarters.', at: S ? { x: S.door.x, z: S.door.z } : null });
     if (G.news) G.news.say(`${this.short(b)} TAKEN IN, ${b.district}`);
     G.emit('bounty:taken', { id: b.id, name: b.name });
   }
-  // taken in: up off the pavement, he walks off ahead to the station and is gone round the corner
+  // [O5b] taken in: up off the pavement, he follows me - at my heels on foot (a walk, a run when I
+  // run), into the back of my car when I get in near him and out of it when I get out, through a
+  // door behind me; left 70 m behind for 8 s he is lost: back on his corner.
+  // After the critic: he follows the way I went (a trail of my steps, or my car's), never put
+  // anywhere out of my sight (M.trail; the old 24 m catch-up is gone); he walks to the car's back door
+  // and gets in only when it stands (M1: he vanished the frame I pressed E); 'He's falling behind.'
+  // from 40 m before he is lost at 70 (WAVE_C rule 2); in my face he steps back to 2 m (M2)
   stepLed(M, dt) {
-    const G = this.G, c = M.c;
-    if (M.t < 1.6 || !c) return;
-    if (!M.walk) { M.walk = true; try { c.setState('walk', 0.3); } catch (err) { /* */ } M.ang = Math.atan2(c.pos.x - G.eye.x, c.pos.z - G.eye.z); }
-    const q = _v.set(c.pos.x + Math.sin(M.ang) * 1.4 * dt, 0, c.pos.z + Math.cos(M.ang) * 1.4 * dt);
-    G.stage.colliders.resolve(q, 0.35, c.fig && c.fig.collider);
-    if (Math.hypot(q.x - c.pos.x, q.z - c.pos.z) < 1.4 * dt * 0.3) M.ang += 2 * dt;
-    c.pos.x = q.x; c.pos.z = q.z; if (c.object) { c.object.position.x = q.x; c.object.position.z = q.z; }
-    this.face(c, M.ang, dt); c.speed = 1.4;
-    if (M.t > 12) M.mode = 'gone';
+    const G = this.G, c = M.c, R = G.city;
+    if (!c || M.t < 1.6) return;
+    const me = G.controller.pos;
+    const car = R && R.inCar ? R.car : null;
+    const col = c.fig && c.fig.collider;
+    const put = (q) => { c.pos.x = q.x; c.pos.z = q.z; if (c.object) { c.object.position.x = q.x; c.object.position.z = q.z; } };
+    const T = M.trail || (M.trail = []);
+    // the trail: a point every 0.8 m of the way I went (on foot, or my car's way down the road)
+    { const at = car ? car.pos : me, last = T[T.length - 1]; if (!last || Math.hypot(at.x - last.x, at.z - last.z) > 0.8) { T.push({ x: at.x, z: at.z }); if (T.length > 400) T.shift(); } }
+    let goal = null, goalSp = 0;
+    if (car) {
+      if (M.inCar) { put(car.pos); M.far = 0; this.warnFar(M, false); return; }
+      // the car's back door on his side: he walks to it (runs, from far) and gets in while it stands
+      const side = car.local(c.pos, _v).z >= 0 ? 1 : -1;
+      const door = car.world(-car.spec.halfL * 0.3, side * (car.spec.halfW + 0.42), _door);
+      const dd = Math.hypot(door.x - c.pos.x, door.z - c.pos.z), still = car.speedAbs < 1.2;
+      if (still && dd < 0.5) {
+        M.inCar = true; T.length = 0;
+        if (c.object) c.object.visible = false;
+        if (col) col.gone = true;
+        this.walkState(M, 'idle');
+        G.sfx.play('b7_carDoor', new THREE.Vector3(door.x, 1.0, door.z));
+        G.emit('bounty:boarded', { id: M.b.id });
+        return;
+      }
+      if (still && Math.hypot(c.pos.x - car.pos.x, c.pos.z - car.pos.z) < 12) { goal = door; goalSp = dd > 3 ? 4.6 : 1.6; T.length = 0; }
+    } else if (M.inCar) {
+      // (out of the back as I get out: at the back door on my side, behind me)
+      M.inCar = false; T.length = 0;
+      const f = G.camera.getWorldDirection(_dir);
+      const q = _v.set(me.x - f.x * 1.4, 0, me.z - f.z * 1.4);
+      G.stage.colliders.resolve(q, 0.35, col);
+      put(q);
+      if (c.object) c.object.visible = true;
+      if (col) col.gone = false;
+    }
+    const d = Math.hypot(me.x - c.pos.x, me.z - c.pos.z);
+    // (through a place's door behind me, in or out: he steps through at my back - a door I just went
+    // through, him a few strides behind it, never across the city)
+    const P = R && R.places;
+    if (P && P.list && !car && d < 12) {
+      const lotOf = (x, z) => P.list.find((s) => s.lot && x > s.lot.x0 && x < s.lot.x1 && z > s.lot.z0 && z < s.lot.z1) || null;
+      const mine = P.inside || null, his = lotOf(c.pos.x, c.pos.z);
+      if (mine !== his) {
+        const f = G.camera.getWorldDirection(_dir); const q = _v.set(me.x - f.x * 1.3, 0, me.z - f.z * 1.3);
+        G.stage.colliders.resolve(q, 0.35, col);
+        if (lotOf(q.x, q.z) === mine) { put(q); T.length = 0; return; }
+      }
+    }
+    // lost: left far behind for a while - warned first
+    this.warnFar(M, M.warned ? d > 30 : d > 40);
+    M.far = d > 70 ? M.far + dt : 0;
+    if (M.far > 8) { this.lose(M); return; }
+    if (!goal) {
+      // close: straight to me (the trail behind him forgotten); in my face: a step back
+      if (d < 5) T.length = 0;
+      if (d < 1.2) M.back = true; else if (d > 1.9) M.back = false;
+      if (M.back) {
+        const a = Math.atan2(c.pos.x - me.x, c.pos.z - me.z), sp = 1.1;
+        const q = _v.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt);
+        G.stage.colliders.resolve(q, 0.35, col); put(q);
+        this.walkState(M, 'idle'); this.face(c, a + Math.PI, dt); c.speed = 0;
+        return;
+      }
+      if (d < 2.0) { this.walkState(M, 'idle'); this.face(c, Math.atan2(me.x - c.pos.x, me.z - c.pos.z), dt); c.speed = 0; return; }
+      // far: along the trail (the points he has passed dropped; a later one nearer him taken)
+      while (T.length > 1 && (Math.hypot(T[0].x - c.pos.x, T[0].z - c.pos.z) < 0.7 || Math.hypot(T[1].x - c.pos.x, T[1].z - c.pos.z) < Math.hypot(T[0].x - c.pos.x, T[0].z - c.pos.z))) T.shift();
+      goal = T.length && d > 5 ? T[0] : me;
+      goalSp = d > 12 ? 6.2 : d > 5 ? 4.6 : 1.5;
+    }
+    const sp = goalSp;
+    this.walkState(M, sp > 2 ? 'run' : 'walk');
+    let a = Math.atan2(goal.x - c.pos.x, goal.z - c.pos.z);
+    const q = _v.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt);
+    G.stage.colliders.resolve(q, 0.35, col);
+    if (Math.hypot(q.x - c.pos.x, q.z - c.pos.z) < sp * dt * 0.3) { a += (M.b.seed % 2 ? 1.3 : -1.3); q.set(c.pos.x + Math.sin(a) * sp * dt, 0, c.pos.z + Math.cos(a) * sp * dt); G.stage.colliders.resolve(q, 0.35, col); }
+    put(q);
+    this.face(c, a, dt); c.speed = sp;
+  }
+  // [O5b] the kit's warning line while the man I lead falls behind (cleared when he is near again, in the car, or lost)
+  warnFar(M, on) {
+    const G = this.G, W = 'He\u2019s falling behind.';
+    if (on && !M.warned) { M.warned = true; G.hud.warn(W); }
+    else if (!on && M.warned) { M.warned = false; if (G.hud.warnText === W) G.hud.warn(null); }
+  }
+  walkState(M, st) { if (M.walk === st) return; M.walk = st; try { M.c.setState(st, 0.25); } catch (err) { /* */ } }
+  // [O5b] the man I was leading lost (left behind, or the night went on without him): back on his corner
+  lose(M, quiet = false) {
+    const G = this.G, b = M.b;
+    this.warnFar(M, false);
+    if (M.c && M.c.object) M.c.object.visible = true;
+    b.state = 'out'; b.awayT = G.time;
+    M.mode = 'gone';
+    if (G.things && G.things.active.has('bounty_' + b.id)) G.things.end('bounty_' + b.id, { result: 'lost' });
+    if (!quiet && G.hud.say) G.hud.say('He got away.', 2.0, { always: true });
+    G.emit('bounty:away', { id: b.id });
+  }
+  // [O5b] the man I lead within reach of me (the desk books him)
+  ledNear(r = 7) {
+    const e = this.G.controller.pos;
+    for (const M of this.men.values()) if (M.mode === 'led' && !M.inCar && M.c && M.t > 1.6 && Math.hypot(M.c.pos.x - e.x, M.c.pos.z - e.z) < r) return M;
+    return null;
+  }
+  // [O5b] E at the sergeant's desk with him at hand: booked - the reward, the poster PAID, and he is
+  // walked through the cells' door to a cell (path: world points from the room; path.sit: the bench)
+  book(M, path = []) {
+    const G = this.G, b = M.b;
+    b.state = 'paid'; b.paidHalf = false;
+    this.paid += b.reward;
+    M.mode = 'booked'; M.t = 0; M.path = path.map((p) => ({ x: p.x, z: p.z })); M.sitAt = path.sit || null;
+    if (G.hud.say) G.hud.say('Book him.', 1.6, { always: true });
+    if (G.things && G.things.active.has('bounty_' + b.id)) G.things.end('bounty_' + b.id, { result: 'booked', money: b.reward, news: `${this.short(b).toUpperCase()} BOOKED AT HEADQUARTERS`, where: b.district });
+    else G.money.add(b.reward, 'bounty');
+    G.emit('bounty:booked', { id: b.id, name: b.name, reward: b.reward });
+  }
+  // walked to his cell by the path, then sat on its bench
+  stepBooked(M, dt) {
+    const c = M.c;
+    if (!c || M.t < 0.8) return;
+    const t = M.path && M.path[0];
+    if (!t) {
+      M.mode = 'jailed'; this.walkState(M, 'idle');
+      if (M.sitAt) { try { c.sit({ pos: new THREE.Vector3(M.sitAt.x, M.sitAt.y, M.sitAt.z), yaw: M.sitAt.yaw, name: 'bench' }); c.setState('sitSmoke', 0.4); } catch (err) { /* */ } }
+      this.G.emit('bounty:jailed', { id: M.b.id });
+      return;
+    }
+    const dx = t.x - c.pos.x, dz = t.z - c.pos.z, d = Math.hypot(dx, dz);
+    if (d < 0.25) { M.path.shift(); return; }
+    this.walkState(M, 'walk');
+    const sp = Math.min(1.4, d / Math.max(dt, 1e-3));
+    c.pos.x += (dx / d) * sp * dt; c.pos.z += (dz / d) * sp * dt;
+    if (c.object) { c.object.position.x = c.pos.x; c.object.position.z = c.pos.z; }
+    this.face(c, Math.atan2(dx, dz), dt); c.speed = 1.4;
+  }
+  // a dead man's half (any owed): paid at the desk
+  collect() {
+    const G = this.G, L = this.names();
+    const owed = L.filter((b) => b.state === 'down' || b.state === 'dead');
+    if (!owed.length) return 0;
+    const sum = this.owed(L);
+    for (const b of owed) { b.paidHalf = true; b.state = 'paid'; }
+    this.paid += sum;
+    G.money.add(sum, 'bounty');
+    G.emit('bounty:paid', { sum });
+    return sum;
   }
   dead(M) {
     const G = this.G, b = M.b;
@@ -384,17 +513,8 @@ export class Bounty {
     if (M.mode === 'gun' || M.mode === 'gunrun') kitFree(this.night, 'bounty');
   }
 
-  use() {
-    const G = this.G, L = this.names();
-    const owed = L.filter((b) => b.state === 'down' || b.state === 'dead' || b.state === 'taken');
-    if (owed.length) {
-      const sum = this.owed(L);
-      for (const b of owed) { b.paidHalf = b.state !== 'taken'; b.state = 'paid'; }
-      this.paid += sum;
-      G.money.add(sum, "bounty");   // (game.money: O4's wallet)
-    }
-    this.openCard();
-  }
+  // [O5b] E at the hall's board: the card (the desk pays)
+  use() { this.openCard(); }
 
   // ---- the card -----------------------------------------------------------------------
   openCard() {
@@ -442,7 +562,7 @@ export class Bounty {
 
 // a wanted poster: the photo (a man under his hat brim, in ink), the name,
 // the district, the reward; crossed through when he is down, PAID when paid
-function poster(b) {
+export function poster(b) {
   const c = document.createElement('canvas');
   const w = 210, h = 300;
   c.width = w * 2; c.height = h * 2;

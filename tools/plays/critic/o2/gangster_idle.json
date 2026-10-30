@@ -1,0 +1,44 @@
+{
+ "about": "[O2 critic] the gang's saloon taken, then sitting in it, hands off: do the two men who draw hurt me through the car? can I lose?",
+ "url": "/?mute=1&start=city&held=1&again=1&come=saloon:gangster",
+ "size": [
+  1280,
+  800
+ ],
+ "out": "shots/o2critic/gangster_idle",
+ "steps": [
+  {
+   "wait": 1500
+  },
+  {
+   "clickOn": "#title .opt[data-k=begin]",
+   "taken": "G.state !== 'title'",
+   "retries": 5,
+   "every": 4000
+  },
+  {
+   "until": "G.scenes.current && G.scenes.current.id === 'city' && G.scenes.fadeK < 0.05",
+   "timeout": 20000
+  },
+  {
+   "wait": 800
+  },
+  {
+   "eval": "({ hp: G.health.hp })"
+  },
+  {
+   "drive": "tools/plays/critic/o2/cold.mjs",
+   "mode": "pullsit",
+   "sitMs": 20000
+  },
+  {
+   "shot": "g_sat15"
+  },
+  {
+   "wait": 8000
+  },
+  {
+   "eval": "({ hp: G.health.hp, failing: !!G.failing, inCar: G.city.inCar, men: G.wheels.hijack.men.map((m) => m.state + ':' + (m.gun ? m.gun.shots : '-')) })"
+  }
+ ]
+}
