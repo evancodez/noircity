@@ -6,6 +6,9 @@ parked cars came into the city (634c47e) and the manager's stopgap tune on
 main (5b9bb44). What was found, in the manager's merge checks and the lanes'
 runs:
 
+- **[must]** (the user, 2026-10-29, the point of the game; every brief and
+  merge is judged by it) "The point of this game is a fun open world that feels smooth, alive, populated and on theme. Make it look varied, feel alive and populated, and have fun gameplay." Smooth, alive, populated, varied, fun,
+  and on theme (the ink).
 - **[must]** O6b's rule is that `She's burning. Get out.` always fires first,
   with time to get out. The crash path to the fire skipped it: a chase at
   heat 3 into the roadblock burned the car after two crashes with no warning

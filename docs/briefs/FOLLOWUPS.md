@@ -5,6 +5,13 @@ Each becomes a short lane at `high` when a slot frees (the cap is four),
 in this order unless the user's words move one up. Lane O9 (alive) is
 the next launch after O2 and O8 merge, ahead of all of these.
 
+Every brief still to be written (the stale plays, the look, perf and sound
+passes, the whole-game cold critic, the README) carries the user's words of
+2026-10-29 as its first [must]: "The point of this game is a fun open world
+that feels smooth, alive, populated and on theme. Make it look varied, feel
+alive and populated, and have fun gameplay." Every merge is judged by its
+five words - smooth, alive, populated, varied, fun - and on theme (the ink).
+
 1. **O2b, wheels** (`docs/briefs/O2B_WHEELS.md`; O2 merged at 634c47e with
    the view behind the car, the variants and a seat for every kind): the
    tight hull for rounds, each kind's cabin drawn as the coupe's (the police

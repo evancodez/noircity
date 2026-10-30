@@ -4,6 +4,9 @@ Branch `ow/O2b-wheels`, port 5382, effort high. A short follow-up on lane O2
 (`docs/reports/O2.md`, its sections 5 and 6) after its merge into main at
 634c47e. The user's words (2026-10-23, after his first play):
 
+- **[must]** (the user, 2026-10-29, the point of the game; every brief and
+  merge is judged by it) "The point of this game is a fun open world that feels smooth, alive, populated and on theme. Make it look varied, feel alive and populated, and have fun gameplay." Smooth, alive, populated, varied, fun,
+  and on theme (the ink).
 - **[must]** "the car hitboxes may be too big (bullets seem to hit cars
   sometimes)": a tight hull for rounds against a car - body and cabin boxes
   inside the silhouette, glass that a round goes through (and cracks), a

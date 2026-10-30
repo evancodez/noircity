@@ -113,7 +113,8 @@ a branch); they can be cleaned.
 6. O7's second pass: the whole-game hunt, judged by "alive, not canned, not
    stiff" and the propagation / variety rules above the rest (its brief addenda
    are in `docs/briefs/O7_NIGHT.md`).
-7. The roadmap's phases 3 and 4 (`docs/OPEN_WORLD.md`, `docs/briefs/FOLLOWUPS.md`):
+7. The roadmap's phases 3 and 4 (`docs/OPEN_WORLD.md`, `docs/briefs/FOLLOWUPS.md`;
+   each brief's first [must] is the user's words of 2026-10-29, the point of the game):
    the whole-game cold critic, the look pass, the perf pass on a quiet machine
    (the drive-through's hitch bar was never proved under the lanes' load), the
    sound pass, the README.

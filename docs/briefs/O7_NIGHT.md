@@ -243,3 +243,11 @@ happens?), the read test (name each man's state from a strip), the
 nonsense list (every reaction without a cause, every one that outlives
 it), each counted in your report. Lane O9 (docs/briefs/O9_ALIVE.md) builds
 the life; your hunt finds what it missed.
+
+## From the user, 2026-10-29: the point of the game (second pass; a [must])
+- **[must]** "The point of this game is a fun open world that feels smooth,
+  alive, populated and on theme. Make it look varied, feel alive and
+  populated, and have fun gameplay." (docs/OPEN_WORLD.md, at the head of the
+  user's words.) Your second pass's whole-game hunt scores the game by its
+  five words - smooth, alive, populated, varied, fun - and on theme (the
+  ink), each with what you saw and counted, above everything else in §6.

@@ -4,6 +4,9 @@ Branch `ow/O4b-weapons`, port 5384, effort high. A short follow-up on
 O4 (combat), O7 (the night: the wheel draws and holsters) and O3 (the
 police: the arrest). The user's words (2026-10-23):
 
+- **[must]** (the user, 2026-10-29, the point of the game; every brief and
+  merge is judged by it) "The point of this game is a fun open world that feels smooth, alive, populated and on theme. Make it look varied, feel alive and populated, and have fun gameplay." Smooth, alive, populated, varied, fun,
+  and on theme (the ink).
 - **[must]** "Make sure there isn't a glitch when switching weapons or
   staying with fists raised, nothing, or gun(s)."
 - **[must]** "I don't want my gun taken away when arrested."

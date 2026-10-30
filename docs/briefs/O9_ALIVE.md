@@ -5,6 +5,9 @@ night) and O8 (figures) are merged: the lane that turns the systems into
 a city that feels alive. The user's words after playing (2026-10-23,
 midday):
 
+- **[must]** (the user, 2026-10-29, the point of the game; every brief and
+  merge is judged by it) "The point of this game is a fun open world that feels smooth, alive, populated and on theme. Make it look varied, feel alive and populated, and have fun gameplay." Smooth, alive, populated, varied, fun,
+  and on theme (the ink).
 - **[must]** "The city doesn't feel alive, and NPC reactions, police
   etc., are often too stiff or nonsensical."
 - **[must]** "It's possible the car hitboxes are too big, as bullets seem

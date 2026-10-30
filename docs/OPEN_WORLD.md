@@ -7,6 +7,12 @@ word), cloned from it on 2026-10-22 (the clone's head is NOIR EXTREME's
 vehicles, the gun kit, the fist fight, the pad, the kit of cards and
 fails, the tools). The user's words, which are the standard:
 
+> (2026-10-29, the point of it all; it heads the rest, and every brief and
+> every merge is judged by its five words - smooth, alive, populated,
+> varied, fun - and on theme, the ink:) The point of this game is a fun
+> open world that feels smooth, alive, populated and on theme. Make it
+> look varied, feel alive and populated, and have fun gameplay.
+
 > An open world game set in this noir aesthetic. You can reuse some
 > assets but for the most part I want a new city. You should be able to
 > drive around, get into shootouts, fist fight (change these mechanics to
