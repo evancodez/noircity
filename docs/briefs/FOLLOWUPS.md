@@ -11,13 +11,15 @@ the next launch after O2 and O8 merge, ahead of all of these.
    car's box, the lorry's missing frame), the top speeds, the far build, the
    fare bot, the race, hands in the hijack, the traffic parking, the kept
    car's sheet, V on the title's keys line.
-2. **O6c, the fire's warning**: on main after O6b, a chase at heat 3 into
+2. **O6c, car wear** (`docs/briefs/O6C_WEAR.md`): on main after O6b, a chase at heat 3 into
    the roadblock burns the car after two crashes with no warning
    (`o3_roadblock.json`: `warnedFor` null, 'She went up with you in
    her.'); O6b's rule is that `She's burning. Get out.` always fires
    first, with time to get out. The crash path to the fire skips it.
    Also: a dent alone on a black car is dark at 20 m (O6b's left); the
-   blast hurts your own car beside a burning one.
+   blast hurts your own car beside a burning one; the wear by kind in place
+   of the manager's flat half (5b9bb44), since the traffic's knocks burned the
+   car in the drive-through and in every chase.
 3. **The stale plays**: `o3_unstaged_shoot.json` expects the heat held at
    the place, but the city now arrests a shooter who stands still within
    seconds (O3's cop under O7's... the rule is right, the play is not);
