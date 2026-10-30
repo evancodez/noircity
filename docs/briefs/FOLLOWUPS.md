@@ -42,6 +42,11 @@ playtest.
    the place, but the city now arrests a shooter who stands still within
    seconds (O3's cop under O7's... the rule is right, the play is not);
    O7's heat plays against O3's police (O7's second pass has them).
+   From O8's merge check (9a91ca1): `o8/falls` round 1 fails on its own bar
+   (the stoop's body settles at 4.98 s against 4.5 s; O8's left: the bar or
+   the settle, judged by eye); `o3_chase_medium` and `o3_roadblock` end in an
+   arrest 40 m from the start (the police at 7 s: O9's to make fair);
+   `o1_drive` times out among the traffic (O2b's).
 4. **The look pass, places** (from the art director's look at O5's and
    O7's frames; O5b has the rooms): the minimap's labels upright, the el
    ride's window, the title's colour measured (O7's second pass).

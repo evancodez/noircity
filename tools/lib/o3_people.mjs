@@ -478,10 +478,24 @@ async function gangs(api) {
   if (opts.draw) {
     await waitFor(js, '!(G.brawl.active || G.crowd.active) && !G.failing', 120000);
     await sleep(1500);
+    // [manager, O8's merge check] the fight's arrest wakes me on the cell's bench since O5b's
+    // STATION_CELL: seated, the wheel is the seat's - wait out the fall, clear the heat, up by E
+    // (as O1c's fist walk does), then to the Docks
+    for (let k = 0; k < 30 && (await js('!!G.failing || G.state !== "playing"')); k++) await sleep(500);
+    await js('(G.police && G.police.heat > 0 ? G.police.clear("reset") : 0, 1)');
+    if (await js('!!(G.city && G.city.places && G.city.places.seat)')) { await api.keyDown('KeyE'); await sleep(80); await api.keyUp('KeyE'); await sleep(900); }
     const D = await js(`(() => { const P = G.people, Gs = P.gangs; P.dbgClear(); P.hold = true;
       const post = Gs.posts.find(p => p.gang === 'docks');
       const T = Gs.three('docks', post.x, post.z, { post }); window.__o3d = T;
-      const n = P.nearestP(post.x + 16, post.z); G.controller.setPose(n.x, n.z, Math.atan2(-(post.x - n.x), -(post.z - n.z)), -0.05);
+      // (15 m off with the three in sight: since O1c's graph the node nearest post + 16 m can be
+      // the post's own corner, which put me among them)
+      let n = null;
+      for (const [dx, dz] of [[16, 0], [-16, 0], [0, 16], [0, -16], [12, 12], [-12, 12], [12, -12], [-12, -12]]) {
+        const c = P.nearestP(post.x + dx, post.z + dz), d = Math.hypot(c.x - post.x, c.z - post.z);
+        if (d > 10 && d < 21 && P.graph.lineOfSight(c.x, c.z, post.x, post.z)) { n = c; break; }
+      }
+      n = n || P.nearestP(post.x + 16, post.z);
+      G.controller.setPose(n.x, n.z, Math.atan2(-(post.x - n.x), -(post.z - n.z)), -0.05);
       return { x: post.x, z: post.z, kinds: T.men.map(m => m.kind) }; })()`);
     R.docks = D;
     await sleep(1200);

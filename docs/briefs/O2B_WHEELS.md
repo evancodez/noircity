@@ -47,7 +47,10 @@ and the kept car's sheet and repaint: breadth without finish.
    its lane (O8's note: `manAhead` looks only at the player, so walkers must
    dash clear of every car); the start's kerb clear past the parked taxi
    66 m along it (x -112, z -67: the first long W from `start=city` ends
-   in it).
+   in it). And the car I leave at a door stays where I left it: in the
+   manager's o5_tour on main (9a91ca1) the player's car moved while he was
+   inside at four places (the diner, the garage, the hall, stairs3); find what
+   moves it (the traffic's knocks, most likely) and stop it.
 3. Hands in the hijack (the break-in's hands at the door, the pull's grab).
 4. The race: the field harder for a hand that drives well (bad hands won the
    first of four; medium won by 195 m); the leader's ease only after a loss.
