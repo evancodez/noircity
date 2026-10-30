@@ -21,7 +21,8 @@ midday):
   etc., are often too stiff or nonsensical."
 - **[must]** "It's possible the car hitboxes are too big, as bullets seem
   to hit the cars sometimes. Also some first-person car views, like the
-  police car's, are blocked."
+  police car's, are blocked." (Lane O2b's since 2026-10-29, §0:
+  judged at O2b's merge; your report names where it stands.)
 - **[must]** "Basically make the city feel more alive and less canned and
   stiff. That's a general goal."
 - **[must]** "Alive means robust systems of reaction and procedural stuff
