@@ -885,7 +885,12 @@ export class People {
           if (p.drunk) rt += 0.3;
           if (this.near(p.pos.x, p.pos.z, 2.2).length > 3) rt += 0.1;
           const risky = sp > 11 || dd - hl < 8;
-          p.carSeen = { v, t: now, rt, freeze: Math.random() < (risky ? 0.5 : 0.08) };
+          // (after O2's merge: the traffic's cars keep to their lanes at a city's pace and a man
+          // crossing knows them - he is on his guard, never frozen; only a car driven at him, mine,
+          // or a wild one over 60 km/h, takes him by surprise)
+          const wild = v === this.G.vehicles.player || sp > 16.5;
+          if (!wild) rt = Math.min(rt, 0.3);
+          p.carSeen = { v, t: now, rt, freeze: wild && Math.random() < (risky ? 0.5 : 0.08) };
           continue;
         }
         if (now - S.t < S.rt) continue;
