@@ -481,8 +481,12 @@ export class Car {
     const mr = car2 ? Math.sqrt(clamp(ram.spec.mass / hit.spec.mass, 0.56, 2.5)) : 1;   // (a coupe into a lorry: three quarters; a lorry into a sedan: half again)
     if (!car2) { if (imp > 5) this.hurt((imp - 5) * (headOn > 0.6 ? 0.14 : 0.08), point); }
     else {
-      const hOn = Math.abs(ram.fwd.x * nx + ram.fwd.z * nz);
-      if (imp > 5) ram.hurt((imp - 5) * (hOn > 0.6 ? 0.07 : 0.05) / mr, point);
+      // [manager, the merge check after O5b] a parked car shoved into me is the rammer by the closing
+      // speed, and a parked body has a yaw but no fwd (the chase play's and the propagation play's
+      // "reading 'x'" at this line): its nose from its yaw
+      const rf = ram.fwd || { x: Math.cos(ram.yaw || 0), z: -Math.sin(ram.yaw || 0) };
+      const hOn = Math.abs(rf.x * nx + rf.z * nz);
+      if (imp > 5 && ram.hurt) ram.hurt((imp - 5) * (hOn > 0.6 ? 0.07 : 0.05) / mr, point);
       if (impC * mr > 2.5 && hit.hurt) hit.hurt((impC * mr - 2.5) * 0.3, point);   // (a lorry's weight: hard at a walking pace)
     }
     if (o) {
