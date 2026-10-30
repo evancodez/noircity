@@ -1,9 +1,10 @@
 # O1c — the streets, the follow-up (lane report, the handover)
 
 Branch `ow/O1c-streets` from main at 7040333 (after O3, O5, O7); main merged in
-again at b2228c7 (O6b's car damage, O7 and O3 together, O9's brief). Brief:
+again at b2228c7 (O6b's car damage, O7 and O3 together, O9's brief), at
+6cb5eec (O2's wheels) and at b108606 (O5b's places, the manager's wear tune). Brief:
 `docs/briefs/O1C_STREETS.md`. Port 5378. What a player meets, how it is built,
-the proofs, what is left. **Section 0 (after the critic) is the current state;
+the proofs, what is left. **Section 0 (after the critic; 0c after the last two merges) is the current state;
 where sections 1-6 say otherwise (the kick, a car's 'dent' that was a sound, the
 0.5 s beat, the duplicate punch), section 0 wins.**
 
@@ -66,9 +67,9 @@ stands as written**: none disputed.
    the wet print white with a pink edge, and the cones are white (the cone
    pass carries no colour). A warm column needs the ground shader's lamp
    reflection or the cone's volume to carry a hue - a renderer lane's.
-2. **A bicycle knocked over** stands on its wheels where it lands more often
-   than not (tilted 0 in both walks; it tumbles and lands upright): it reads
-   as moved, not fallen.
+2. ~~A bicycle knocked over stands on its wheels~~ - fixed in 0c (it lies on
+   its side). Lying, it is a frame of thin lines: in the black between the
+   pools it reads faintly (5-7 % of its box), plainly in a pool.
 3. **C on foot** means nothing in the city (no crouch in the walk mode): the
    rulebook's 'get low' on foot is the controller's, not this lane's.
 4. **A car punched is a crime only if I never drove it** (`driver !==
@@ -78,6 +79,67 @@ stands as written**: none disputed.
    the second blow cannot reach a crate already shoved over).
 6. The earlier Left (section 6) items 1, 4, 6, 7 stand; 2 (no foot) and 5 (the
    duplicate punch) are gone with the kick and the merge.
+
+### 0c. After O2's and O5b's merges (the second Fix pass, 2026-10-29)
+Main merged in twice more: at 6cb5eec (O2's wheels: the fleet, traffic, parked
+cars, the hijack) and at b108606 (O5b's places: the hospital, the ward beat,
+HQ's board, `STATION_CELL` on; the manager's wear tune: a blow wears a car
+half in the city). Both merged clean; no shim stood in for either. What the
+critic's findings needed after them, each played on the final code:
+- **B1 on O2's cars.** A parked car of O2's is an instance body, not a car: a
+  jab at one (its proxy mesh, `userData.parked`) now makes it a car where it
+  stands (O2's own `parked.promote`, then `wheels.leave`: a car left there),
+  attaches O6b's damage and dents it, rocks it and is the `vandal` crime. A
+  struck car's springs are posed for 1.5 s by `rockTick` (city.js, every step
+  on foot) and never stepped (a step let a parked car's physics shove it off its
+  bay). Looking at a car to take, O2's hijack prompt took every press: LMB /
+  RMB is the fist's again unless a break-in or its fight is on (`city.js`,
+  `fistAtCar`). The fist walk strikes the roam's coupe and an O2 parked car;
+  it reads a dent off the car's skin (metres its vertices moved, summed), not
+  off a label or the scar's slots.
+- **B2, the bicycle** (my own Left 2): a bicycle knocked over landed on its
+  wheels and read as moved, not fallen. It lies on its side now (`topple: 'z'`
+  on `bike` in `smashKinds.js`, O6b's rule for a plate that must not stand on
+  its edge), its frame printed pale where it lies (0.5, its pale variant's
+  enamel, in `parts/props.js`): two bicycles struck, both tilted 90 deg,
+  seen 5 % and 7 % of their box (a frame of thin lines: its threshold 5 %);
+  looked at in the frames - pale rims and frame on the flags.
+- **The fist walk after an arrest**: since O5b's `STATION_CELL` an arrest wakes
+  me seated on the cell's bench, where the fist is the seat's; the walk gets up
+  by E (as a player does) before the next target. (In the runs a civilian or a
+  cop saw an early knock, as the street should; the walk clears the heat
+  between targets, the cop's bin is the contest.)
+
+The runs on the final code (b108606 + this pass):
+- **The fist walk** `o1c_fist.json`: **PASS, 30 of 30** - every 'over' lying
+  0.003 m over the ground, resting and seen (dustbins 37 %, a dustbin 37,
+  board 38, flowers 33, barrel 53, rain barrel 40, churns 38, crates 51, drums
+  60, barrels 51, bench 58, handcart 25); shakes; six irons ring with the hand
+  hurt; glass crack then gone (`smash`); wall; door; **the roam's coupe: skin
+  pushed in 0.49 m summed, rock 0.031 rad, `vandal@civ`; an O2 parked car:
+  0.26 m, 0.031 rad, `vandal`**; the bottle broken; the bin a cop saw:
+  `vandal@cop`, **HEAT 1**. Press to the swing 1.6-45 ms. #errlog clean. (The
+  bicycle there ran before its topple; the two-bicycle run above after it.)
+- **The fist by the pad** `o1c_fist_pad.json`: **PASS**, 0 key or mouse events.
+- `node tools/pavecheck.mjs`: **0 / 0 / 0** (2,893 corners, 3,255 legs).
+- `o1b_jank.json`: **PASS, 20 of 20**.
+- **Golden**: game one's **40 of 40 identical**; the city's 22: **20
+  identical** (O5b's three new frames among them), **2 re-accepted**:
+  `city_wheels_street` and `city_wheels_lineup` (O2's, taken on main without
+  this lane's near ground: only the lower half differs, the near ground darker
+  by `uNearK`). Colour of every city golden frame and the title: **max 1.02 %
+  red-tinted** (`city_grand_car`), none over 2 %.
+- **Errors** (`tools/errors.sh`): `scene=city&beat=roam&at=` grand, hill,
+  tenements, docks; the station and hospital beats; `start=city`: **clean, all
+  seven** (`start=city` hung once under the watchdog at a load of 350-470 -
+  other lanes capturing - and ran clean on the retry).
+- **fps** (`MOMENTS=city tools/fpstable.mjs 5`, at a load of 150-350): Grand
+  Ave from the car **1.26 x** shot=perf, the el's corner 1.57, Broadway 1.40,
+  the Bowery 1.37, the quay 1.78 - every spot over perf; draws 670 / 599 / 930
+  / 671 / 555 (unchanged).
+- Not re-run in this pass: `o1_drive`, `o6_city`, `o3_witness`, `o3_crowd`
+  (nothing of the graph, the walk or the cars' driving changed here; the
+  wear tune that burned `o1_drive`'s car is main's, unverified by me).
 
 ---------------------------------------------------------------------------
 ## 1. What exists now (as a player meets it)
